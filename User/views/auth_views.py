@@ -1,28 +1,38 @@
-from django.shortcuts import render, redirect
-from User.models import CustomUser
-from django.contrib import messages
-from django.db import IntegrityError
-from django.core.exceptions import ValidationError
-from django.core.validators import validate_email
-from django.contrib.auth import authenticate, login
-from User.tasks import send_welcome_email_task
-from User.utilites import generate_otp
-from django.core.cache import cache
-from django.core.exceptions import SuspiciousOperation
-import logging
-from User.validators import (
-    validate_name,
-    validate_email_unique,
-    validate_mobile,
-    validate_password_strength,
-    validate_password_match
-)
+from .common_imports import *
 
+def search(request):
+    """
+    Search view to filter paintings based on query
+    Supports clearing/resetting results from backend
+    """
+    # Check if clear action is requested
+    if 'clear' in request.GET:
+        # Redirect to search page without query parameters
+        return redirect('search')
+    
+    query = request.GET.get('q', '').strip()
+    results = []
+    
+    if query:
+        # Search across multiple fields
+        results = Product.objects.filter(
+            Q(title__icontains=query) |
+            Q(description__icontains=query) |
+            Q(artist__icontains=query) |
+            Q(category__icontains=query) |
+            Q(tags__icontains=query)
+        ).distinct()
+    
+    context = {
+        'query': query,
+        'results': results,
+        'result_count': results.count() if query else 0,
+        'has_query': bool(query)
+    }
+    
+    return render(request, 'search_results.html', context)
 
-logger = logging.getLogger('django') 
-
-
-def home(request):
+def index(request):
     
     return render(request,'index.html')
 
@@ -112,6 +122,8 @@ def signin(request):
 
             login(request, user)
             # messages.success(request, f"Welcome back, {user.first_name}!")
+            if user.is_superuser:
+                return redirect('admin_home')
             return redirect("home")
 
         except ValidationError as e:
@@ -124,9 +136,78 @@ def signin(request):
 
     return render(request, "signin.html")
 
-def forgot_password(request):
-    return render(request,'forgot_password.html')
+def forgot_password(request):  
+    if request.method == "POST":
+        email = request.POST.get("email")
 
+        if not CustomUser.objects.filter(email=email).exists():
+            messages.error(request, 'Email not found')
+            return redirect("forgot_password")
+
+        logger.info(f"user entered email: {email}")
+
+        otp = generate_otp()
+
+        cache_key = f"otp_reset_{email}"
+        cache.set(cache_key, otp, timeout=300)  # 5 minutes
+
+        # Save email in session
+        request.session["email"] = email
+
+        # FIXED: correct order of arguments
+        send_forgot_password_email.delay(email, otp)
+
+        messages.success(request, 'OTP sent! Please check your email.')
+        return redirect("enter_otp_fp")
+
+    return render(request, 'forgot_password.html')
+
+    
+    
+def enter_otp_fp(request):
+    try:
+        if request.method == "POST":
+            entered_otp = request.POST.get("otp", "").strip()
+
+            email = request.session.get("email")
+
+            if not email:
+                messages.error(request, "Session expired.")
+                return redirect("forgot_password")
+
+            if not entered_otp:
+                messages.warning(request, "Please enter your OTP.")
+                return redirect("enter_otp_fp")
+
+            cache_key = f"otp_reset_{email}"
+            stored_otp = cache.get(cache_key)
+
+            if stored_otp is None:
+                messages.error(request, "OTP expired. Please resend.")
+                return redirect("enter_otp_fp")
+
+            if entered_otp == str(stored_otp):
+                cache.delete(cache_key)
+                messages.success(request, "OTP verified successfully!")
+
+                return redirect("reset_password")
+            else:
+                messages.error(request, "Invalid OTP.")
+                return redirect("enter_otp_fp")
+
+        return render(request, "enter_otp_fp.html")
+
+    except Exception as e:
+        logger.exception("OTP verification error: %s", e)
+        messages.error(request, "Unexpected error.")
+        return redirect("enter_otp_fp")
+
+
+
+
+def reset_password(request):
+    pass
+    
 def enter_otp(request):
     try:
         if request.method == "POST":
@@ -157,8 +238,6 @@ def enter_otp(request):
                 cache.delete(cache_key)  # clear OTP from Redis
                 messages.success(request, "OTP verified successfully! Welcome to Vara 🎨")
                 
-                # Clear session email
-                request.session.pop("email", None)
                 return redirect("signin")
             else:
                 messages.error(request, "Invalid OTP. Please try again.")
@@ -180,3 +259,83 @@ def enter_otp(request):
         logger.exception("Error during OTP verification: %s", e)
         messages.error(request, "An unexpected error occurred. Please try again later.")
         return redirect("enter_otp")
+
+
+def resend_otp(request):
+    # Check if it's an AJAX request
+    is_ajax = request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+    
+    try:
+        email = request.session.get("email")
+
+        if not email:
+            if is_ajax:
+                return JsonResponse({
+                    'success': False,
+                    'message': 'Session expired. Please sign up again.'
+                }, status=400)
+            else:
+                messages.error(request, "Session expired. Please sign up again.")
+                return redirect("signup")
+
+        # Get user first name (optional, for email greeting)
+        user = CustomUser.objects.filter(email=email).first()
+        first_name = user.first_name if user else "User"
+
+        # Generate new OTP
+        otp = generate_otp()
+
+        # Update Redis cache with new OTP (valid for 5 mins)
+        cache_key = f"otp_{email}"
+        cache.set(cache_key, otp, timeout=300)
+
+        # Send new OTP email via Celery
+        send_welcome_email_task.delay(email, first_name, otp)
+
+        if is_ajax:
+            return JsonResponse({
+                'success': True,
+                'message': 'A new OTP has been sent to your email.'
+            })
+        else:
+            messages.success(request, "A new OTP has been sent to your email.")
+            return redirect("enter_otp")
+
+    except ConnectionError:
+        logger.exception("Connection error during OTP resend")
+        if is_ajax:
+            return JsonResponse({
+                'success': False,
+                'message': 'Server connection error. Please try again later.'
+            }, status=500)
+        else:
+            messages.error(request, "Server connection error. Please try again later.")
+            return redirect("enter_otp")
+
+    except Exception as e:
+        logger.exception("Error during OTP resend: %s", e)
+        if is_ajax:
+            return JsonResponse({
+                'success': False,
+                'message': 'An unexpected error occurred while resending OTP.'
+            }, status=500)
+        else:
+            messages.error(request, "An unexpected error occurred while resending OTP.")
+            return redirect("enter_otp")
+
+
+def logout_view(request):
+    try:
+        if request.user.is_authenticated:
+            logout(request)  #Clears the session and logs out the user
+            messages.success(request, "You’ve been logged out successfully.")
+        else:
+            messages.info(request, "You’re not logged in.")
+        return redirect("index")  # Redirect to login page after logout
+    except Exception as e:
+        logger.info(f"Logout error: {str(e)}")
+        messages.error(request, "An error occurred while logging out.")
+        return redirect("home")
+    
+def profile(request):
+    return render(request,'profile.html')

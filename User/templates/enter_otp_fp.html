@@ -5,7 +5,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Enter OTP</title>
+    <title>Verify OTP – Reset Password</title>
 
     <!-- Tailwind CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -23,9 +23,9 @@
 <body class="flex justify-center items-center min-h-screen">
 
     <div class="bg-white p-10 rounded-3xl shadow-xl w-full max-w-md text-center">
-        <h2 class="text-2xl font-semibold mb-2">Enter the OTP</h2>
+        <h2 class="text-2xl font-semibold mb-2">Verify Your OTP</h2>
         <p class="text-gray-500 text-sm mb-6">
-            The OTP was sent to your registered email — please check!
+            An OTP has been sent to your registered email. Please enter it below to reset your password.
         </p>
         
         <!-- Message Display Area -->
@@ -54,8 +54,8 @@
         </form>
 
         <div class="mt-4">
-            <a href="{% url 'signup' %}" class="text-sm text-gray-700 hover:underline">
-                Back to signup
+            <a href="{% url 'forgot_password' %}" class="text-sm text-gray-700 hover:underline">
+                Back to Forgot Password
             </a>
         </div>
     </div>
@@ -113,19 +113,16 @@
                 </div>
             `;
             
-            // Auto-hide after 5 seconds
             setTimeout(() => {
                 messageContainer.innerHTML = '';
             }, 5000);
         }
 
-        // Resend OTP AJAX handler
+        // Resend OTP AJAX
         document.getElementById('resend-btn').addEventListener('click', function(e) {
             e.preventDefault();
             
             const resendBtn = this;
-            
-            // Disable button during request
             resendBtn.classList.add('pointer-events-none', 'opacity-50');
             resendBtn.textContent = 'Sending...';
             
@@ -141,7 +138,7 @@
             .then(data => {
                 if (data.success) {
                     displayMessage(data.message, 'success');
-                    startTimer(); // Restart timer
+                    startTimer();
                     resendBtn.textContent = 'Resend OTP';
                 } else {
                     displayMessage(data.message, 'error');

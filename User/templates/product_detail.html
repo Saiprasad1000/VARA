@@ -1,0 +1,191 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ product.title }} - VARA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+
+    <!-- Navigation -->
+    {% include "base/nav.html" %}
+
+    <!-- Product Detail Section -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+
+            <!-- Left Column - Product Image -->
+            <div class="bg-white rounded-lg p-8">
+                {% if product.product_imgs %}
+                <img src="/media/{{ product.product_imgs.0 }}" alt="{{ product.title }}"
+                    class="w-full h-auto object-contain rounded-lg">
+                {% else %}
+                <div class="w-full h-96 bg-gray-200 flex items-center justify-center rounded-lg">
+                    <svg class="w-24 h-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                        </path>
+                    </svg>
+                </div>
+                {% endif %}
+            </div>
+
+            <!-- Right Column - Product Details -->
+            <div class="space-y-6">
+                <!-- Title -->
+                <div>
+                    <h1 class="text-4xl font-bold text-gray-900">{{ product.title }}</h1>
+                    <p class="text-xl text-gray-600 mt-2">{{ product.artist_name }}</p>
+                </div>
+
+                <!-- Rating -->
+                <div class="flex items-center space-x-1">
+                    <svg class="w-6 h-6 text-yellow-400 fill-current" viewBox="0 0 24 24">
+                        <path
+                            d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                    </svg>
+                    <svg class="w-6 h-6 text-yellow-400 fill-current" viewBox="0 0 24 24">
+                        <path
+                            d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                    </svg>
+                    <svg class="w-6 h-6 text-yellow-400 fill-current" viewBox="0 0 24 24">
+                        <path
+                            d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                    </svg>
+                    <svg class="w-6 h-6 text-yellow-400 fill-current" viewBox="0 0 24 24">
+                        <path
+                            d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                    </svg>
+                    <svg class="w-6 h-6 text-gray-300 fill-current" viewBox="0 0 24 24">
+                        <path
+                            d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                    </svg>
+                </div>
+
+                <!-- Product Information -->
+                <div class="space-y-3 text-gray-700">
+                    <p class="text-lg"><span class="font-semibold">Category:</span> {{ product.category.name }}</p>
+                    <p class="text-lg"><span class="font-semibold">Publishing Date:</span> {{
+                        product.publishing_date|date:"d-m-Y" }}</p>
+                    <p class="text-lg"><span class="font-semibold">Size:</span> 18X24</p>
+                </div>
+
+                <!-- Variant Selection -->
+                {% if variants %}
+                <div>
+                    <p class="font-semibold text-gray-900 mb-3">Frame Options:</p>
+                    <div class="flex flex-wrap gap-4">
+                        {% for variant in variants %}
+                        <div
+                            class="border-2 {% if forloop.first %}border-orange-500{% else %}border-gray-300{% endif %} rounded-lg p-4 cursor-pointer hover:bg-orange-50 transition">
+                            <p class="font-medium text-gray-900">{{ variant.variant_type }}</p>
+                            <p class="text-sm text-gray-600">price: ₹{{ variant.price }}</p>
+                            <p class="text-xs text-gray-500">Stock: {{ variant.stock }}</p>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Price -->
+                <div>
+                    <p class="text-5xl font-bold text-green-600">₹{{ product.price }}</p>
+                </div>
+
+                <!-- Quantity Selector -->
+                <div class="flex items-center space-x-4">
+                    <button
+                        class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-300 transition"
+                        onclick="decrementQuantity()">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                        </svg>
+                    </button>
+                    <input type="number" id="quantity" value="2" min="1" max="{{ product.available_quantity }}"
+                        class="w-16 h-10 text-center border-2 border-gray-300 rounded-lg font-semibold">
+                    <button
+                        class="w-10 h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center hover:bg-gray-900 transition"
+                        onclick="incrementQuantity()">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
+                            </path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex items-center space-x-4">
+                    <button
+                        class="flex-1 bg-orange-500 text-white py-4 rounded-lg font-semibold hover:bg-orange-600 transition text-lg">
+                        Add to Cart
+                    </button>
+                    <button
+                        class="flex-1 bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition text-lg">
+                        Buy Now
+                    </button>
+                    <button
+                        class="w-14 h-14 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition">
+                        <svg class="w-7 h-7 fill-current" viewBox="0 0 24 24">
+                            <path
+                                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Stock Info -->
+                <p class="text-sm text-gray-600">
+                    <span class="font-semibold">Availability:</span>
+                    {% if product.available_quantity > 0 %}
+                    <span class="text-green-600">In Stock ({{ product.available_quantity }} available)</span>
+                    {% else %}
+                    <span class="text-red-600">Out of Stock</span>
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- Product Description -->
+        {% if product.description %}
+        <div class="mt-12 bg-white rounded-lg p-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Description</h2>
+            <p class="text-gray-700 leading-relaxed">{{ product.description }}</p>
+        </div>
+        {% endif %}
+    </section>
+
+    <!-- Footer -->
+    {% include "base/footer.html" %}
+
+    <script>
+        function incrementQuantity() {
+            const input = document.getElementById('quantity');
+            const max = parseInt(input.max);
+            const current = parseInt(input.value);
+            if (current < max) {
+                input.value = current + 1;
+            }
+        }
+
+        function decrementQuantity() {
+            const input = document.getElementById('quantity');
+            const min = parseInt(input.min);
+            const current = parseInt(input.value);
+            if (current > min) {
+                input.value = current - 1;
+            }
+        }
+    </script>
+</body>
+
+</html>

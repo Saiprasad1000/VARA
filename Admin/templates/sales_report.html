@@ -1,0 +1,192 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sales Report - VARA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-[#FFFDF8] text-gray-800">
+    <!-- Include Sidebar -->
+    {% include 'sidebar.html' %}
+
+    <!-- Main Content -->
+    <div class="ml-64 min-h-screen">
+        <!-- Top Navigation Bar -->
+        <header class="bg-[#FFFDF8] sticky top-0 z-10">
+            <div class="flex items-center justify-between px-8 py-4">
+                <!-- Search Bar -->
+                <div class="flex-1 max-w-xl">
+                    <div class="relative">
+                        <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input type="text" placeholder="Search"
+                            class="w-full pl-10 pr-4 py-2 bg-[#F7F4ED] border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7F5C]">
+                    </div>
+                </div>
+
+                <!-- Logout Button -->
+                <a href="{% url 'logout' %}"
+                    class="ml-4 px-6 py-2 bg-[#FF7F5C] text-white rounded-lg hover:bg-[#ff6741] transition-colors font-medium">
+                    Log out
+                </a>
+            </div>
+        </header>
+
+        <!-- Sales Report Content -->
+        <main class="p-8">
+            <!-- Header Section -->
+            <div class="mb-6">
+                <h1 class="text-3xl font-bold text-[#6B3E26]">Sales report</h1>
+            </div>
+
+            <!-- Filter Section -->
+            <div class="bg-[#FBF9F4] rounded-lg shadow-sm p-6 mb-6 border border-[#E7E2D9]">
+                <div class="flex flex-wrap items-center gap-4">
+                    <!-- Product Name Filter -->
+                    <select
+                        class="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7F5C]">
+                        <option>Product Name</option>
+                        <option>Nagavalli</option>
+                        <option>Girl</option>
+                        <option>painting1</option>
+                        <option>painting2</option>
+                    </select>
+
+                    <span class="text-gray-600 font-medium">By</span>
+
+                    <!-- Sorting Filter -->
+                    <select
+                        class="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7F5C]">
+                        <option>Ascending</option>
+                        <option>Descending</option>
+                    </select>
+
+                    <span class="text-gray-600 font-medium ml-4">Filter</span>
+
+                    <!-- Category Filter -->
+                    <select
+                        class="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7F5C]">
+                        <option value="">All Categories</option>
+                        <option>Romance</option>
+                        <option>Kids</option>
+                        <option>Fantasy</option>
+                        <option>Thriller</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Sales Table -->
+            <div class="bg-[#FBF9F4] rounded-lg shadow-sm overflow-hidden border border-[#E7E2D9]">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-[#F7F4ED] border-b border-[#EDEAE3]">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600">Constomer</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600">Product Name</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600">Qty</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600">Price</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600">Category</th>
+                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            {% for sale in sales %}
+                            <tr class="border-t border-[#EDEAE3] hover:bg-[#F9F6F1] transition-colors">
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ sale.customer }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ sale.product_name }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ sale.quantity }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ sale.price }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900">{{ sale.category }}</td>
+                                <td class="px-6 py-4 text-sm text-gray-900 font-semibold">{{ sale.total }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="px-6 py-8 text-center text-gray-500">No sales data available</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Action Buttons -->
+                <div class="flex justify-end gap-3 px-6 py-4 border-t border-[#EDEAE3]">
+                    <button
+                        class="flex items-center gap-2 px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium">
+                        <span>Download PDF</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                        </svg>
+                    </button>
+                    <button
+                        class="flex items-center gap-2 px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium">
+                        <span>Get Excel sheet</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex justify-center mt-6">
+                <nav class="flex items-center gap-2">
+                    <button
+                        class="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700">
+                        1
+                    </button>
+                    <button
+                        class="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-full font-medium hover:bg-gray-100">
+                        2
+                    </button>
+                    <button
+                        class="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-full font-medium hover:bg-gray-100">
+                        3
+                    </button>
+                    <button
+                        class="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-full font-medium hover:bg-gray-100">
+                        4
+                    </button>
+                    <button
+                        class="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-full font-medium hover:bg-gray-100">
+                        5
+                    </button>
+                    <button
+                        class="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-full font-medium hover:bg-gray-100">
+                        6
+                    </button>
+                    <button
+                        class="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-full font-medium hover:bg-gray-100">
+                        7
+                    </button>
+                    <button
+                        class="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-full font-medium hover:bg-gray-100">
+                        8
+                    </button>
+                    <button
+                        class="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-full font-medium hover:bg-gray-100">
+                        9
+                    </button>
+                    <button
+                        class="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-full font-medium hover:bg-gray-100">
+                        10
+                    </button>
+                    <button
+                        class="px-4 h-10 flex items-center justify-center bg-white text-blue-600 rounded-full font-medium hover:bg-gray-100">
+                        NEXT
+                    </button>
+                </nav>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>

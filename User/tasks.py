@@ -70,8 +70,42 @@ def send_welcome_email_task(email, first_name,otp):
             from_email,
             recipient_list,
             fail_silently=False,
-            html_message=html_message  # 👈 send HTML version
+            html_message=html_message  # send HTML version
         )
         return f"Email sent successfully to {email} with OTP {otp}"
     except Exception as e:
         return f"Failed to send email: {str(e)}"
+
+@shared_task
+def send_forgot_password_email(email, otp):
+    subject = "🔐 Your OTP to Reset Password – VARA"
+
+    message = (
+        f"Your OTP to reset your password is: {otp}\n"
+        f"Do not share it with anyone.\n\n"
+        f"– VARA Team"
+    )
+
+    html_message = f"""
+    <html>
+        <body style="font-family: Arial; padding: 20px;">
+            <h2>Password Reset OTP</h2>
+            <p>Your OTP is:</p>
+            <div style="font-size: 30px; font-weight: bold; background: #6a1b9a; color: white; padding: 10px; width: fit-content;">
+                {otp}
+            </div>
+            <p>Please use this OTP to reset your password.</p>
+        </body>
+    </html>
+    """
+
+    try:
+        send_mail(
+            subject,
+            message,
+            settings.EMAIL_HOST_USER,
+            [email],
+            html_message=html_message
+        )
+    except Exception as e:
+        print("Email error:", e)

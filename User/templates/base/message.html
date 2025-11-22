@@ -1,0 +1,18 @@
+<!-- Message Block (kept above form) -->
+      {% if messages %}
+        <div class="space-y-2 mb-4">
+          {% for message in messages %}
+            <div
+              class="p-3 text-white text-sm text-center rounded-xl
+                     {% if message.tags == 'error' %}
+                       bg-red-300
+                     {% elif message.tags == 'success' %}
+                       bg-green-500
+                     {% else %}
+                       bg-gray-500
+                     {% endif %}">
+              {{ message }}
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}

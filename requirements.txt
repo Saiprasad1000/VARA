@@ -1,0 +1,8 @@
+django
+python-decouple
+celery
+redis
+django-redis
+django-allauth
+# psycopg2-binary
+Pillow

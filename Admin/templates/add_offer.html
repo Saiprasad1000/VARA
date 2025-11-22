@@ -1,0 +1,64 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VARA - Add Offer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-[#FFFDF8] text-gray-800">
+    {% include 'sidebar.html' %}
+
+    <div class="ml-64 min-h-screen">
+        <header class="bg-[#FFFDF8] sticky top-0 z-10">
+            <div class="flex items-center justify-between px-8 py-4">
+                <h1 class="text-xl font-semibold text-[#6B3E26]"></h1>
+                <div class="flex-1"></div>
+                <a href="{% url 'logout' %}"
+                    class="bg-[#FF7F5C] text-white px-6 py-2 rounded-lg hover:bg-[#ff6741] transition font-medium">
+                    Log out
+                </a>
+            </div>
+        </header>
+
+        <main class="flex justify-center items-center min-h-[calc(100vh-80px)]">
+            <div class="bg-[#F2EFE9] rounded-2xl shadow-sm p-12 w-full max-w-md mx-auto">
+                <h2 class="text-2xl font-medium text-center text-gray-800 mb-8">Add Offer</h2>
+
+                <form method="POST" class="space-y-6">
+                    {% csrf_token %}
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Product</label>
+                        <input type="text" name="product" required
+                            class="w-full px-4 py-3 border-none rounded-lg focus:ring-2 focus:ring-[#8CC63F] outline-none bg-white shadow-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Category</label>
+                        <input type="text" name="category" required
+                            class="w-full px-4 py-3 border-none rounded-lg focus:ring-2 focus:ring-[#8CC63F] outline-none bg-white shadow-sm">
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Offer percentage</label>
+                        <input type="number" name="offer_percentage" min="0" max="100" required
+                            class="w-full px-4 py-3 border-none rounded-lg focus:ring-2 focus:ring-[#8CC63F] outline-none bg-white shadow-sm">
+                    </div>
+
+                    <div class="flex justify-center mt-8">
+                        <button type="submit"
+                            class="px-12 py-2 bg-[#8CC63F] text-white font-medium rounded-lg hover:bg-[#7bb236] transition shadow-sm">
+                            Add
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>

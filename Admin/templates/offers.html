@@ -1,0 +1,154 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VARA - Offers</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-[#FFFDF8] text-gray-800">
+    <!-- Sidebar -->
+    {% include 'sidebar.html' %}
+
+    <!-- Main Section -->
+    <div class="ml-64 min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="flex justify-between items-center px-8 py-4 bg-[#FFFDF8]">
+            <h1 class="text-xl font-semibold text-[#6B3E26]">Offers</h1>
+            <button class="bg-[#FF7F5C] text-white px-6 py-2 rounded-lg hover:bg-[#ff6741] transition">
+                Log out
+            </button>
+        </header>
+
+        <!-- Search -->
+        <div class="px-8 mt-2">
+            <div class="relative w-72">
+                <input type="text" placeholder="Search"
+                    class="w-full pl-10 pr-4 py-2 bg-[#F7F4ED] rounded-lg focus:ring-2 focus:ring-[#FF7F5C] outline-none">
+                <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none"
+                    stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+            </div>
+        </div>
+
+        <!-- Offers Table -->
+        <main class="flex-1 px-8 mt-6">
+            <div class="bg-[#FBF9F4] rounded-xl shadow-sm overflow-hidden border border-[#E7E2D9]">
+                <table class="w-full">
+                    <thead class="bg-[#F7F4ED] text-left text-sm text-gray-600">
+                        <tr>
+                            <th class="py-3 px-6 font-semibold">S.No</th>
+                            <th class="py-3 px-6 font-semibold">Product</th>
+                            <th class="py-3 px-6 font-semibold">Category</th>
+                            <th class="py-3 px-6 font-semibold">Offer</th>
+                            <th class="py-3 px-6 font-semibold text-center">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-sm text-gray-700">
+                        {% for offer in offers %}
+                        <tr class="border-t border-[#EDEAE3] hover:bg-[#F9F6F1] transition">
+                            <td class="py-3 px-6">{{ forloop.counter }}</td>
+                            <td class="py-3 px-6">{{ offer.product_name }}</td>
+                            <td class="py-3 px-6">{{ offer.category_name }}</td>
+                            <td class="py-3 px-6">{{ offer.discount }}%</td>
+                            <td class="py-3 px-6 text-center space-x-2">
+                                {% if offer.is_listed %}
+                                <button onclick="toggleOffer('{{ offer.id }}')"
+                                    class="bg-green-500 text-white px-4 py-1 rounded-md hover:bg-green-600 transition">List</button>
+                                {% else %}
+                                <button onclick="toggleOffer('{{ offer.id }}')"
+                                    class="bg-red-500 text-white px-4 py-1 rounded-md hover:bg-red-600 transition">Unlist</button>
+                                {% endif %}
+                                <button onclick="deleteOffer('{{ offer.id }}')"
+                                    class="text-red-600 hover:text-red-800 transition">
+                                    🗑️
+                                </button>
+                                <button onclick="editOffer('{{ offer.id }}')"
+                                    class="text-gray-700 hover:text-gray-900 transition">
+                                    ✏️
+                                </button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="5" class="text-center py-6 text-gray-500">No offers available.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Add Offer Button -->
+            <div class="mt-6">
+                <a href="{% url 'add_offer' %}"
+                    class="bg-[#8CC63F] text-white px-8 py-2 rounded-lg hover:bg-[#7bb236] transition inline-block">
+                    Add Offer
+                </a>
+            </div>
+
+            <!-- Pagination -->
+            <div class="flex justify-center items-center mt-8 space-x-2">
+                {% if offers.has_previous %}
+                <a href="?page={{ offers.previous_page_number }}"
+                    class="px-3 py-1 text-sm text-gray-600 hover:text-[#FF7F5C]">Prev</a>
+                {% endif %}
+
+                {% for num in offers.paginator.page_range %}
+                {% if num == offers.number %}
+                <span class="px-4 py-2 bg-blue-600 text-white rounded-md">{{ num }}</span>
+                {% else %}
+                <a href="?page={{ num }}" class="px-3 py-1 text-sm text-gray-600 hover:text-[#FF7F5C]">{{ num }}</a>
+                {% endif %}
+                {% endfor %}
+
+                {% if offers.has_next %}
+                <a href="?page={{ offers.next_page_number }}"
+                    class="px-3 py-1 text-sm text-gray-600 hover:text-[#FF7F5C]">Next</a>
+                <a href="?page={{ offers.next_page_number }}"
+                    class="px-3 py-1 text-sm font-medium text-blue-600 hover:text-blue-800">NEXT</a>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+
+    <!-- Script Section -->
+    <script>
+        function toggleOffer(offerId) {
+            fetch(`/admin/toggle_offer/${offerId}/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}",
+                },
+            })
+                .then(res => res.json())
+                .then(data => {
+                    console.log("Offer toggled:", data);
+                    window.location.reload();
+                })
+                .catch(err => console.error("Error:", err));
+        }
+
+        function deleteOffer(offerId) {
+            if (confirm("Are you sure you want to delete this offer?")) {
+                fetch(`/admin/delete_offer/${offerId}/`, {
+                    method: "POST",
+                    headers: { "X-CSRFToken": "{{ csrf_token }}" },
+                })
+                    .then(res => res.json())
+                    .then(data => window.location.reload())
+                    .catch(err => console.error("Error:", err));
+            }
+        }
+
+        function editOffer(offerId) {
+            window.location.href = `/admin/edit_offer/${offerId}/`;
+        }
+    </script>
+</body>
+
+</html>

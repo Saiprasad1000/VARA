@@ -1,0 +1,233 @@
+<!-- dashboard.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VARA - Admin Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-[#FFFDF8] text-gray-800">
+    <!-- Include Sidebar -->
+    {% include "base/message.html" %}
+    {% include 'sidebar.html' %}
+
+    <!-- Main Content -->
+    <div class="ml-64 min-h-screen">
+        <!-- Top Navigation Bar -->
+        <header class="bg-[#FFFDF8] sticky top-0 z-10">
+            <div class="flex items-center justify-between px-8 py-4">
+                <!-- Search Bar -->
+                <div class="flex-1 max-w-xl">
+                    <div class="relative">
+                        <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
+                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
+                        <input type="text" placeholder="Search"
+                            class="w-full pl-10 pr-4 py-2 bg-[#F7F4ED] border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7F5C]">
+                    </div>
+                </div>
+
+
+            </div>
+        </header>
+
+        <!-- Dashboard Content -->
+        <main class="p-8">
+            <!-- Stats Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <!-- Total User Card -->
+                <div class="bg-[#FBF9F4] rounded-lg shadow-sm p-6 border border-[#E7E2D9]">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-gray-600 text-sm font-medium">Total User</h3>
+                        <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-3xl font-bold text-gray-800 mb-2">40,689</p>
+                    <div class="flex items-center text-sm">
+                        <svg class="w-4 h-4 text-green-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                        <span class="text-green-500 font-medium">8.5%</span>
+                        <span class="text-gray-500 ml-1">Up from last month</span>
+                    </div>
+                </div>
+
+                <!-- Total Order Card -->
+                <div class="bg-[#FBF9F4] rounded-lg shadow-sm p-6 border border-[#E7E2D9]">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-gray-600 text-sm font-medium">Total Order</h3>
+                        <div class="w-10 h-10 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-3xl font-bold text-gray-800 mb-2">10293</p>
+                    <div class="flex items-center text-sm">
+                        <svg class="w-4 h-4 text-green-500 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                        <span class="text-green-500 font-medium">1.3%</span>
+                        <span class="text-gray-500 ml-1">Up from last month</span>
+                    </div>
+                </div>
+
+                <!-- Total Sales Card -->
+                <div class="bg-[#FBF9F4] rounded-lg shadow-sm p-6 border border-[#E7E2D9]">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-gray-600 text-sm font-medium">Total Sales</h3>
+                        <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                    </div>
+                    <p class="text-3xl font-bold text-gray-800 mb-2">$89,000</p>
+                    <div class="flex items-center text-sm">
+                        <svg class="w-4 h-4 text-red-500 mr-1 transform rotate-180" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                        </svg>
+                        <span class="text-red-500 font-medium">4.3%</span>
+                        <span class="text-gray-500 ml-1">Down from last month</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sales Details Chart -->
+            <div class="bg-[#FBF9F4] rounded-lg shadow-sm p-6 mb-8 border border-[#E7E2D9]">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-bold text-[#6B3E26]">Sales Details</h2>
+                    <div class="flex gap-2">
+                        <button
+                            class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">Today</button>
+                        <button
+                            class="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors">October</button>
+                    </div>
+                </div>
+
+                <!-- Chart Placeholder -->
+                <div class="h-64 relative">
+                    <svg class="w-full h-full" viewBox="0 0 600 250">
+                        <!-- Y-axis labels -->
+                        <text x="10" y="20" class="text-xs fill-gray-400">100M</text>
+                        <text x="10" y="75" class="text-xs fill-gray-400">80M</text>
+                        <text x="10" y="130" class="text-xs fill-gray-400">60M</text>
+                        <text x="10" y="185" class="text-xs fill-gray-400">40M</text>
+                        <text x="10" y="240" class="text-xs fill-gray-400">20M</text>
+
+                        <!-- Grid lines -->
+                        <line x1="50" y1="20" x2="580" y2="20" stroke="#f0f0f0" stroke-width="1" />
+                        <line x1="50" y1="75" x2="580" y2="75" stroke="#f0f0f0" stroke-width="1" />
+                        <line x1="50" y1="130" x2="580" y2="130" stroke="#f0f0f0" stroke-width="1" />
+                        <line x1="50" y1="185" x2="580" y2="185" stroke="#f0f0f0" stroke-width="1" />
+                        <line x1="50" y1="240" x2="580" y2="240" stroke="#f0f0f0" stroke-width="1" />
+
+                        <!-- Line chart -->
+                        <polyline
+                            points="50,180 90,150 130,160 170,140 210,90 250,80 290,100 330,120 370,95 410,150 450,115 490,130 530,120 570,125"
+                            fill="none" stroke="#4F46E5" stroke-width="2" />
+
+                        <!-- Data point highlight -->
+                        <circle cx="250" cy="80" r="4" fill="#4F46E5" />
+                        <rect x="230" y="50" width="60" height="25" fill="#4F46E5" rx="4" />
+                        <text x="260" y="68" class="text-xs fill-white text-center" text-anchor="middle">$4,290</text>
+
+                        <!-- X-axis labels -->
+                        <text x="50" y="260" class="text-xs fill-gray-400">5k</text>
+                        <text x="150" y="260" class="text-xs fill-gray-400">10k</text>
+                        <text x="250" y="260" class="text-xs fill-gray-400">15k</text>
+                        <text x="350" y="260" class="text-xs fill-gray-400">20k</text>
+                        <text x="450" y="260" class="text-xs fill-gray-400">25k</text>
+                        <text x="550" y="260" class="text-xs fill-gray-400">30k</text>
+                    </svg>
+                </div>
+            </div>
+
+            <!-- Orders Table -->
+            <div class="bg-[#FBF9F4] rounded-lg shadow-sm overflow-hidden border border-[#E7E2D9]">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-[#F7F4ED] border-b border-[#EDEAE3]">
+                            <tr>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    ID</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Name</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Address</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Date</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Status</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <tr class="hover:bg-[#F9F6F1] transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">00001</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">Christine
+                                    Brooks</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">089 Kutch Green Apt. 448</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">04 Sep 2019</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span
+                                        class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-green-100 text-green-800">
+                                        Completed
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-[#F9F6F1] transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">00002</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">Rosie Pearson
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-700">979 Immanuel Ferry Suite 526</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">28 May 2019</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span
+                                        class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                        Pending
+                                    </span>
+                                </td>
+                            </tr>
+                            <tr class="hover:bg-[#F9F6F1] transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">00003</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">Darrell
+                                    Caldwell</td>
+                                <td class="px-6 py-4 text-sm text-gray-700">8587 Frida Ports</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">23 Nov 2019</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span
+                                        class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-red-100 text-red-800">
+                                        Rejected
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</body>
+
+</html>
