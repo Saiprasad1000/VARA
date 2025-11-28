@@ -28,7 +28,7 @@
             <!-- Left Column - Product Image -->
             <div class="bg-white rounded-lg p-8">
                 {% if product.product_imgs %}
-                <img src="/media/{{ product.product_imgs.0 }}" alt="{{ product.title }}"
+                <img src="{{ MEDIA_URL }}{{ product.product_imgs.0 }}" alt="{{ product.title }}"
                     class="w-full h-auto object-contain rounded-lg">
                 {% else %}
                 <div class="w-full h-96 bg-gray-200 flex items-center justify-center rounded-lg">

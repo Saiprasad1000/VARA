@@ -1,8 +1,8 @@
-django
-python-decouple
-celery
-redis
-django-redis
-django-allauth
-# psycopg2-binary
-Pillow
+django>=5.0,<6.0
+python-decouple>=3.8
+celery>=5.3.0
+redis>=5.0.0
+django-redis>=5.4.0
+django-allauth>=0.57.0
+psycopg2-binary>=2.9.9
+Pillow>=10.0.0

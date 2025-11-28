@@ -1,4 +1,3 @@
-<!-- home.html or index.html -->
 {% load static %}
 
 <!DOCTYPE html>
@@ -45,7 +44,7 @@
                             class="bg-white rounded-lg overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300">
                             <a href="{% url 'product_detail' product.id %}" class="block relative overflow-hidden">
                                 {% if product.product_imgs %}
-                                <img src="/media/{{ product.product_imgs.0 }}" alt="{{ product.title }}"
+                                <img src="{{ MEDIA_URL }}{{ product.product_imgs.0 }}" alt="{{ product.title }}"
                                     class="w-full h-64 object-cover group-hover:scale-110 transition-transform duration-300">
                                 {% else %}
                                 <div class="w-full h-64 bg-gray-200 flex items-center justify-center">

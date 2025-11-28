@@ -8,7 +8,7 @@ def category_list(request):
     try:
         query = request.GET.get('q', '').strip()
         
-        # Base queryset - Latest first, not deleted
+        # Base queryset - Show ALL categories including blocked (not deleted)
         categories = Category.objects.filter(is_deleted=False).order_by('-id')
 
         if query:
@@ -97,4 +97,25 @@ def delete_category(request, category_id):
         return JsonResponse({'success': False, 'error': 'Category not found'})
     except Exception as e:
         logger.exception(f"Error deleting category: {e}")
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@require_POST
+def toggle_category_status(request, category_id):
+    """Toggle category status between Active (isListed=True) and Blocked (isListed=False)"""
+    try:
+        category = Category.objects.get(id=category_id, is_deleted=False)
+        category.isListed = not category.isListed
+        category.save()
+        
+        status = "Active" if category.isListed else "Blocked"
+        messages.success(request, f"Category status updated to {status}.")
+        return JsonResponse({
+            'success': True, 
+            'isListed': category.isListed,
+            'status': status
+        })
+    except Category.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Category not found'})
+    except Exception as e:
+        logger.exception(f"Error toggling category status: {e}")
         return JsonResponse({'success': False, 'error': str(e)})

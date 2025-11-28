@@ -1,40 +1,13 @@
 from .common_imports import *
 
-def search(request):
-    """
-    Search view to filter paintings based on query
-    Supports clearing/resetting results from backend
-    """
-    # Check if clear action is requested
-    if 'clear' in request.GET:
-        # Redirect to search page without query parameters
-        return redirect('search')
-    
-    query = request.GET.get('q', '').strip()
-    results = []
-    
-    if query:
-        # Search across multiple fields
-        results = Product.objects.filter(
-            Q(title__icontains=query) |
-            Q(description__icontains=query) |
-            Q(artist__icontains=query) |
-            Q(category__icontains=query) |
-            Q(tags__icontains=query)
-        ).distinct()
+def index(request):
+    # Fetch products for the landing page
+    products = Product.objects.filter(is_deleted=False).order_by('-created_at')[:8]
     
     context = {
-        'query': query,
-        'results': results,
-        'result_count': results.count() if query else 0,
-        'has_query': bool(query)
+        'best_sellers': products
     }
-    
-    return render(request, 'search_results.html', context)
-
-def index(request):
-    
-    return render(request,'index.html')
+    return render(request, 'index.html', context)
 
 
 def signup(request):
@@ -206,7 +179,48 @@ def enter_otp_fp(request):
 
 
 def reset_password(request):
-    pass
+    """Reset password after OTP verification"""
+    try:
+        # Check if email is in session (from OTP verification)
+        email = request.session.get("email")
+        if not email:
+            messages.error(request, "Session expired. Please start the password reset process again.")
+            return redirect("forgot_password")
+
+        if request.method == "POST":
+            new_password = request.POST.get("new_password", "").strip()
+            confirm_password = request.POST.get("confirm_password", "").strip()
+
+            # Validate passwords
+            try:
+                validate_password_strength(new_password)
+                validate_password_match(new_password, confirm_password)
+            except ValidationError as e:
+                messages.error(request, e.message)
+                return render(request, "reset_password.html")
+
+            # Update user password
+            try:
+                user = CustomUser.objects.get(email=email)
+                user.set_password(new_password)
+                user.save()
+
+                # Clear session email
+                request.session.pop("email", None)
+
+                messages.success(request, "Password reset successfully! Please log in with your new password.")
+                return redirect("signin")
+
+            except CustomUser.DoesNotExist:
+                messages.error(request, "User not found.")
+                return redirect("forgot_password")
+
+        return render(request, "reset_password.html")
+
+    except Exception as e:
+        logger.exception(f"Error in reset_password: {e}")
+        messages.error(request, "An unexpected error occurred.")
+        return redirect("forgot_password")
     
 def enter_otp(request):
     try:
@@ -233,8 +247,8 @@ def enter_otp(request):
                 messages.error(request, "OTP has expired or not found. Please request a new one.")
                 return redirect("enter_otp")
 
-            #  Compare entered OTP with stored one
-            if entered_otp == stored_otp:
+            #  Compare entered OTP with stored one (ensure both are strings)
+            if entered_otp == str(stored_otp):
                 cache.delete(cache_key)  # clear OTP from Redis
                 messages.success(request, "OTP verified successfully! Welcome to Vara 🎨")
                 
