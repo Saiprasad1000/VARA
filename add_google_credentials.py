@@ -11,9 +11,10 @@ django.setup()
 from allauth.socialaccount.models import SocialApp
 from django.contrib.sites.models import Site
 
-# Google OAuth Credentials
-CLIENT_ID = "701960089656-94hg4nndue6s77b6f4ccj9dvmk9ftuk3.apps.googleusercontent.com"
-CLIENT_SECRET = "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"
+
+
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 
 def setup_google_auth():
     print("🔧 Setting up Google OAuth...")
