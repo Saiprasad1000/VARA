@@ -2,6 +2,7 @@ from .common_importers import *
 from ..models import Offer
 from django.core.paginator import Paginator, PageNotAnInteger, EmptyPage
 
+@admin_required
 def offers(request):
     # Get all offers, ordered by creation date (newest first)
     offers_list = Offer.objects.all().order_by('-created_at')
@@ -19,6 +20,7 @@ def offers(request):
     
     return render(request, 'offers.html', {'offers': page_obj})
 
+@admin_required
 def add_offer(request):
     if request.method == 'POST':
         product_name = request.POST.get('product')
@@ -33,5 +35,6 @@ def add_offer(request):
         return redirect('offers')
     return render(request, 'add_offer.html')
 
+@admin_required
 def edit_offer(request):
     return render(request, 'edit_offer.html')

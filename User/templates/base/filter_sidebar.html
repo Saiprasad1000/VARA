@@ -1,10 +1,12 @@
 {% load static %}
 
 <aside class="lg:w-64 flex-shrink-0">
-    <div class="bg-white rounded-lg shadow-sm p-6 sticky top-24">
+    <form method="get" class="bg-white rounded-lg shadow-sm p-6 sticky top-24">
+
         <!-- Filter Header -->
         <div class="flex items-center justify-between mb-6">
             <h3 class="text-lg font-semibold text-gray-900 flex items-center">
+
                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                         d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4">
@@ -12,38 +14,23 @@
                 </svg>
                 Filters
             </h3>
-            <button class="text-sm text-gray-500 hover:text-gray-700 transition-colors">Clear All</button>
+            <a href="{% url 'home' %}" class="text-sm text-gray-500 hover:text-gray-700 transition-colors">Clear All</a>
         </div>
 
         <!-- Category Filters -->
         <div class="mb-6">
             <h4 class="text-sm font-medium text-gray-700 mb-3">Category</h4>
             <div class="space-y-2">
+                {% for category in categories %}
                 <label class="flex items-center cursor-pointer">
-                    <input type="checkbox" name="category" value="acrylic"
-                        class="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900">
-                    <span class="ml-2 text-sm text-gray-700">Acrylic painting</span>
+                    <input type="checkbox" name="category" value="{{ category.name }}"
+                        class="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900"
+                        {% if selected_categories and category.name in selected_categories %}checked{% endif %}>
+                    <span class="ml-2 text-sm text-gray-700">{{ category.name }}</span>
                 </label>
-                <label class="flex items-center cursor-pointer">
-                    <input type="checkbox" name="category" value="oil"
-                        class="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900">
-                    <span class="ml-2 text-sm text-gray-700">Oil sketch Paint</span>
-                </label>
-                <label class="flex items-center cursor-pointer">
-                    <input type="checkbox" name="category" value="charcoal"
-                        class="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900">
-                    <span class="ml-2 text-sm text-gray-700">Charcoal</span>
-                </label>
-                <label class="flex items-center cursor-pointer">
-                    <input type="checkbox" name="category" value="photographs"
-                        class="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900">
-                    <span class="ml-2 text-sm text-gray-700">Photographs</span>
-                </label>
-                <label class="flex items-center cursor-pointer">
-                    <input type="checkbox" name="category" value="digital"
-                        class="w-4 h-4 text-gray-900 border-gray-300 rounded focus:ring-gray-900">
-                    <span class="ml-2 text-sm text-gray-700">Digital Art</span>
-                </label>
+                {% empty %}
+                <p class="text-sm text-gray-500">No categories available.</p>
+                {% endfor %}
             </div>
         </div>
 
@@ -53,44 +40,51 @@
                 <!-- Alphabetical Sorting -->
                 <label class="flex items-center cursor-pointer">
                     <input type="radio" name="sort" value="a-z"
-                        class="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900">
+                        class="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
+                        {% if selected_sort == 'a-z' %}checked{% endif %}>
                     <span class="ml-2 text-sm text-gray-700">A - Z</span>
                 </label>
                 <label class="flex items-center cursor-pointer">
                     <input type="radio" name="sort" value="z-a"
-                        class="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900">
+                        class="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
+                        {% if selected_sort == 'z-a' %}checked{% endif %}>
                     <span class="ml-2 text-sm text-gray-700">Z - A</span>
                 </label>
 
                 <!-- Price Sorting -->
                 <label class="flex items-center cursor-pointer">
                     <input type="radio" name="sort" value="price-low-high"
-                        class="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900">
+                        class="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
+                        {% if selected_sort == 'price-low-high' %}checked{% endif %}>
                     <span class="ml-2 text-sm text-gray-700">Price: Low - High</span>
                 </label>
                 <label class="flex items-center cursor-pointer">
                     <input type="radio" name="sort" value="price-high-low"
-                        class="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900">
+                        class="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
+                        {% if selected_sort == 'price-high-low' %}checked{% endif %}>
                     <span class="ml-2 text-sm text-gray-700">Price: High - Low</span>
                 </label>
 
                 <!-- Date Sorting -->
                 <label class="flex items-center cursor-pointer">
                     <input type="radio" name="sort" value="date-new-old"
-                        class="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900">
+                        class="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
+                        {% if selected_sort == 'date-new-old' %}checked{% endif %}>
                     <span class="ml-2 text-sm text-gray-700">Newest - Oldest</span>
                 </label>
                 <label class="flex items-center cursor-pointer">
                     <input type="radio" name="sort" value="date-old-new"
-                        class="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900">
+                        class="w-4 h-4 text-gray-900 border-gray-300 focus:ring-gray-900"
+                        {% if selected_sort == 'date-old-new' %}checked{% endif %}>
                     <span class="ml-2 text-sm text-gray-700">Oldest - Newest</span>
                 </label>
+
             </div>
         </div>
 
         <!-- Apply Button -->
-        <button class="w-full py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium">
+        <button type="submit" class="w-full py-2.5 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium">
             Apply Filters
         </button>
-    </div>
+    </form>
 </aside>

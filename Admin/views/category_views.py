@@ -4,6 +4,7 @@ from django.views.decorators.http import require_POST
 
 logger = logging.getLogger('django')
 
+@admin_required
 def category_list(request):
     try:
         query = request.GET.get('q', '').strip()
@@ -29,6 +30,7 @@ def category_list(request):
         logger.exception(f"Error in category_list: {e}")
         return render(request, 'error.html', {'message': 'Error fetching categories'})
 
+@admin_required
 def add_category(request):
     if request.method == 'POST':
         name = request.POST.get('name', '').strip()
@@ -53,6 +55,7 @@ def add_category(request):
 
     return render(request, 'add_category.html')
 
+@admin_required
 def edit_category(request, category_id):
     try:
         category = Category.objects.get(id=category_id)
@@ -85,6 +88,7 @@ def edit_category(request, category_id):
 
     return render(request, 'edit_category.html', {'category': category})
 
+@admin_required
 @require_POST
 def delete_category(request, category_id):
     try:
@@ -99,6 +103,7 @@ def delete_category(request, category_id):
         logger.exception(f"Error deleting category: {e}")
         return JsonResponse({'success': False, 'error': str(e)})
 
+@admin_required
 @require_POST
 def toggle_category_status(request, category_id):
     """Toggle category status between Active (isListed=True) and Blocked (isListed=False)"""

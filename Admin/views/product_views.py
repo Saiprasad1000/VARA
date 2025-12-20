@@ -4,20 +4,21 @@ from django.core.files.base import ContentFile
 from PIL import Image
 import io
 import json
-from django.shortcuts import redirect
+from django.shortcuts import redirect, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
-from Admin.models import Product, Category
+from Admin.models import Product, Category, Variant
 
 logger = logging.getLogger('django')
 
+@admin_required
 def product_list(request):
     try:
         query = request.GET.get('q', '').strip()
         
-        # Base queryset - Latest first, not deleted
-        products = Product.objects.filter(is_deleted=False).select_related('category').order_by('-id')
+        # Base queryset Show all products (active and blocked)
+        products = Product.objects.all().select_related('category').order_by('-id')
 
         if query:
             products = products.filter(title__icontains=query)
@@ -37,6 +38,7 @@ def product_list(request):
         logger.exception(f"Error in product_list: {e}")
         return render(request, 'error.html', {'message': 'Error fetching products'})
 
+@admin_required
 def add_product(request):
     categories = Category.objects.filter(is_deleted=False, isListed=True)
     print(f"DEBUG: Found {categories.count()} categories")  # Debug line
@@ -150,6 +152,7 @@ def add_product(request):
 
     return render(request, 'add_product.html', {'categories': categories})
 
+@admin_required
 def edit_product(request, product_id):
     try:
         product = Product.objects.get(id=product_id)
@@ -168,6 +171,7 @@ def edit_product(request, product_id):
         artist_name = request.POST.get('artist_name', '').strip()
         publishing_date = request.POST.get('publishing_date')
         images = request.FILES.getlist('images')
+        reordered_images = request.POST.get('reordered_images')
 
         try:
             category = Category.objects.get(id=category_id)
@@ -180,24 +184,33 @@ def edit_product(request, product_id):
             product.artist_name = artist_name
             product.publishing_date = publishing_date
 
+            # If new images are uploaded, append them to existing images instead of replacing
             if images:
-                if len(images) < 3:
-                     messages.error(request, "Please upload at least 3 images if you are updating them.")
-                     return render(request, 'edit_product.html', {'product': product, 'categories': categories})
-                
-                # Process new images
-                image_urls = []
+                # Start with existing images (if any)
+                existing_images = product.product_imgs or []
+                image_urls = list(existing_images)
+
+                # Process and append new images
                 for img in images:
                     image = Image.open(img)
                     image.thumbnail((800, 800))
                     img_io = io.BytesIO()
                     image_format = img.content_type.split('/')[-1].upper()
-                    if image_format == 'JPG': image_format = 'JPEG'
+                    if image_format == 'JPG':
+                        image_format = 'JPEG'
                     image.save(img_io, format=image_format)
                     filename = f"products/{title}_{img.name}"
                     path = default_storage.save(filename, ContentFile(img_io.getvalue()))
                     image_urls.append(path)
+
                 product.product_imgs = image_urls
+            elif reordered_images:
+                # Update image order if reordered (no new images uploaded)
+                try:
+                    reordered_list = json.loads(reordered_images)
+                    product.product_imgs = reordered_list
+                except json.JSONDecodeError:
+                    pass  # Keep existing order if JSON is invalid
 
             product.save()
             messages.success(request, "Product updated successfully.")
@@ -209,6 +222,7 @@ def edit_product(request, product_id):
 
     return render(request, 'edit_product.html', {'product': product, 'categories': categories})
 
+@admin_required
 @require_POST
 def delete_product(request, product_id):
     try:
@@ -221,4 +235,83 @@ def delete_product(request, product_id):
         return JsonResponse({'success': False, 'error': 'Product not found'})
     except Exception as e:
         logger.exception(f"Error deleting product: {e}")
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@admin_required
+@require_POST
+def toggle_product_status(request, product_id):
+    try:
+        import json
+        data = json.loads(request.body)
+        is_active = data.get('isActive', True)
+        
+        product = Product.objects.get(id=product_id)
+        # Active = is_deleted False, Blocked = is_deleted True
+        product.is_deleted = not is_active
+        product.save()
+        
+        return JsonResponse({'success': True})
+    except Product.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Product not found'})
+    except Exception as e:
+        logger.exception(f"Error toggling product status: {e}")
+        return JsonResponse({'success': False, 'error': str(e)})
+
+@admin_required
+def manage_variants(request, product_id):
+    """Display and manage variants for a specific product"""
+    try:
+        product = get_object_or_404(Product, id=product_id)
+        variants = Variant.objects.filter(product=product).order_by('variant_type')
+        
+        context = {
+            'product': product,
+            'variants': variants
+        }
+        return render(request, 'manage_variants.html', context)
+    except Exception as e:
+        logger.exception(f"Error in manage_variants: {e}")
+        messages.error(request, 'Error loading variants')
+        return redirect('products')
+
+@admin_required
+def add_variant(request, product_id):
+    """Add a new variant to a product"""
+    if request.method == 'POST':
+        try:
+            product = get_object_or_404(Product, id=product_id)
+            variant_type = request.POST.get('variant_type')
+            price = request.POST.get('price')
+            stock = request.POST.get('stock')
+            
+            # Check if variant already exists
+            if Variant.objects.filter(product=product, variant_type=variant_type).exists():
+                messages.error(request, f'{variant_type.title()} variant already exists for this product')
+                return redirect('manage_variants', product_id=product_id)
+            
+            Variant.objects.create(
+                product=product,
+                variant_type=variant_type,
+                price=price,
+                stock=stock,
+                isListed=True
+            )
+            messages.success(request, f'{variant_type.title()} variant added successfully')
+            return redirect('manage_variants', product_id=product_id)
+        except Exception as e:
+            logger.exception(f"Error adding variant: {e}")
+            messages.error(request, 'Error adding variant')
+            return redirect('manage_variants', product_id=product_id)
+    return redirect('products')
+
+@admin_required
+@require_POST
+def remove_variant(request, variant_id):
+    """Remove a variant"""
+    try:
+        variant = get_object_or_404(Variant, id=variant_id)
+        variant.delete()
+        return JsonResponse({'success': True})
+    except Exception as e:
+        logger.exception(f"Error removing variant: {e}")
         return JsonResponse({'success': False, 'error': str(e)})

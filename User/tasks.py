@@ -1,10 +1,14 @@
 from celery import shared_task
 from django.core.mail import send_mail
 from django.conf import settings
+import logging
+
+logger = logging.getLogger(__name__)
 
 @shared_task
 def send_welcome_email_task(email, first_name,otp):
-
+    # Log OTP to server console for troubleshooting (remove in production)
+    logger.info("Signup OTP for %s is %s", email, otp)
 
     subject = "🎨 Welcome to Vara – Your Art Journey Begins!"
 
@@ -78,6 +82,8 @@ def send_welcome_email_task(email, first_name,otp):
 
 @shared_task
 def send_forgot_password_email(email, otp):
+    # Log OTP to server console for troubleshooting (remove in production)
+    logger.info("Password reset OTP for %s is %s", email, otp)
     subject = "🔐 Your OTP to Reset Password – VARA"
 
     message = (

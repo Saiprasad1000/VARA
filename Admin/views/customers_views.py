@@ -5,6 +5,7 @@ from django.db.models import Q
 
 logger = logging.getLogger('django') 
 
+@admin_required
 def customers(request):
     try:
         query = request.GET.get('q', '').strip()
@@ -40,6 +41,7 @@ def customers(request):
             'message': 'Something went wrong. Please try again later.'
         })
 
+@admin_required
 @require_POST
 def toggle_user(request, user_id):
     try:

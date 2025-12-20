@@ -17,5 +17,28 @@ from django.http import JsonResponse
 logger = logging.getLogger(__name__)
 from django.views.decorators.cache import never_cache
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth.decorators import user_passes_test
 from django.db.models import Q
 from Admin.models import Product
+
+# Decorator to check if user is authenticated (regular user, not admin)
+user_required = user_passes_test(
+    lambda user: user.is_authenticated,
+    login_url='signin'
+)
+
+# Decorator to redirect authenticated users away from auth pages
+def anonymous_required(view_func):
+    """
+    Decorator that redirects authenticated users to their home page.
+    - Regular users → redirect to 'home'
+    - Superusers → redirect to 'admin_home'
+    - Unauthenticated users → allow access to the view
+    """
+    def wrapper(request, *args, **kwargs):
+        if request.user.is_authenticated:
+            if request.user.is_superuser:
+                return redirect('admin_home')
+            return redirect('home')
+        return view_func(request, *args, **kwargs)
+    return wrapper

@@ -18,10 +18,7 @@
         <!-- Header -->
         <header class="flex justify-between items-center px-8 py-4 bg-[#FFFDF8]">
             <h1 class="text-2xl font-semibold text-[#6B3E26]">Paintings</h1>
-            <a href="{% url 'logout' %}"
-                class="bg-[#FF7F5C] text-white px-6 py-2 rounded-lg hover:bg-[#ff6741] transition font-medium">
-                Log out
-            </a>
+            
         </header>
 
         <!-- Messages -->
@@ -61,73 +58,91 @@
 
         <!-- Products Table -->
         <main class="flex-1 px-8 mt-6">
-            <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-[#E7E2D9]">
-                <table class="w-full">
-                    <thead class="bg-[#F7F4ED] text-left text-sm text-gray-600">
-                        <tr>
-                            <th class="py-3 px-6 font-semibold">Image</th>
-                            <th class="py-3 px-6 font-semibold">Painting Name</th>
-                            <th class="py-3 px-6 font-semibold">Category</th>
-                            <th class="py-3 px-6 font-semibold">Price</th>
-                            <th class="py-3 px-6 font-semibold">Stock</th>
-                            <th class="py-3 px-6 font-semibold text-center">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody class="text-sm text-gray-700">
-                        {% for product in products %}
-                        <tr class="border-t border-[#EDEAE3] hover:bg-[#F9F6F1] transition">
-                            <td class="py-3 px-6">
-                                {% if product.product_imgs %}
-                                <img src="{{ MEDIA_URL }}{{ product.product_imgs.0 }}" alt="{{ product.title }}"
-                                    class="w-12 h-12 object-cover rounded-lg border border-gray-200">
-                                {% else %}
-                                <div class="w-12 h-12 bg-gray-200 rounded-lg flex items-center justify-center">
-                                    <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor"
-                                        viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                                    </svg>
-                                </div>
-                                {% endif %}
-                            </td>
-                            <td class="py-3 px-6 font-medium">{{ product.title }}</td>
-                            <td class="py-3 px-6">{{ product.category.name }}</td>
-                            <td class="py-3 px-6">₹{{ product.price }}</td>
-                            <td class="py-3 px-6">{{ product.available_quantity }}</td>
-                            <td class="py-3 px-6 text-center">
-                                <div class="flex items-center justify-center gap-2">
-                                    <button onclick="toggleVariant('{{ product.id }}')"
-                                        class="bg-[#8CC63F] text-white text-xs px-3 py-1 rounded-md hover:bg-[#7bb236] transition">
-                                        add variant
-                                    </button>
-                                    <button onclick="toggleProduct('{{ product.id }}')"
-                                        class="bg-[#FFA500] text-white text-xs px-3 py-1 rounded-md hover:bg-[#ff9500] transition">
-                                        modify
-                                    </button>
+            <div class="bg-[#FBF9F4] rounded-xl shadow-sm overflow-hidden border border-[#E7E2D9]">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-[#F7F4ED]">
+                            <tr>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    S.No</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Thumbnail</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Name</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Price</th>
+                                <th
+                                    class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Block / Unblock</th>
+                                <th
+                                    class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Variant</th>
+                                <th
+                                    class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Edit</th>
+                            </tr>
+                        </thead>
+                        <tbody class="text-gray-700">
+                            {% for product in products %}
+                            <tr class="border-t border-[#EDEAE3] hover:bg-[#F9F6F1] transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">{{ forloop.counter }}</td>
+                                <td class="py-3 px-6">
+                                    {% if product.product_imgs %}
+                                    <img src="{{ MEDIA_URL }}{{ product.product_imgs.0 }}" alt="{{ product.title }}"
+                                        class="w-16 h-16 object-cover rounded border border-gray-200">
+                                    {% else %}
+                                    <div class="w-16 h-16 bg-gray-200 rounded flex items-center justify-center">
+                                        <svg class="w-8 h-8 text-gray-400" fill="none" stroke="currentColor"
+                                            viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                                        </svg>
+                                    </div>
+                                    {% endif %}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">{{ product.title }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">{{ product.price }}</td>
+                                <td class="px-6 py-4 text-center">
+                                    <label class="inline-flex items-center cursor-pointer">
+                                        <input type="checkbox" {% if not product.is_deleted %}checked{% endif %}
+                                            class="sr-only peer"
+                                            onchange="toggleProductStatus('{{ product.id }}', this.checked)">
+                                        <div
+                                             class="w-10 h-5 rounded-full relative transition bg-red-400 peer-checked:bg-green-400">
+                                            <div
+                                                class="absolute left-0.5 top-0.5 bg-white w-4 h-4 rounded-full transition peer-checked:translate-x-5">
+                                            </div>
+                                        </div>
+                                    </label>
+                                </td>
+                                <td class="px-6 py-4 text-center">
+                                    <a href="{% url 'manage_variants' product.id %}"
+                                        class="bg-[#8CC63F] text-white text-xs px-3 py-1.5 rounded-md hover:bg-[#7bb236] transition inline-block">
+                                        Variant
+                                    </a>
+                                </td>
+                                <td class="px-6 py-4 text-center">
                                     <a href="{% url 'edit_product' product.id %}"
-                                        class="text-gray-600 hover:text-gray-900 transition">
+                                        class="text-gray-600 hover:text-gray-900 transition inline-block">
                                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                 d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                                         </svg>
                                     </a>
-                                    <button onclick="deleteProduct('{{ product.id }}')"
-                                        class="text-red-600 hover:text-red-800 transition">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                                        </svg>
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        {% empty %}
-                        <tr>
-                            <td colspan="6" class="text-center py-8 text-gray-500">No products available.</td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="7" class="text-center py-8 text-gray-500">No products available.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Pagination -->
@@ -154,40 +169,52 @@
         </main>
     </div>
 
-    <!-- Script Section -->
+    <!-- SweetAlert2 -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
-        function toggleVariant(productId) {
-            alert('Add variant functionality - Product ID: ' + productId);
-            // Implement variant addition logic
-        }
-
-        function toggleProduct(productId) {
-            alert('Modify product functionality - Product ID: ' + productId);
-            // Implement product modification logic
-        }
-
-        function deleteProduct(productId) {
-            if (confirm("Are you sure you want to delete this product?")) {
-                fetch(`/admin/product/delete/${productId}/`, {
-                    method: "POST",
-                    headers: {
-                        "X-CSRFToken": "{{ csrf_token }}",
-                        "Content-Type": "application/json"
-                    },
-                })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            window.location.reload();
-                        } else {
-                            alert('Error deleting product: ' + (data.error || 'Unknown error'));
-                        }
+        function toggleProductStatus(productId, isActive) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "Do you want to change the status of this product?",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, change it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/admin/product/toggle-status/${productId}/`, {
+                        method: "POST",
+                        headers: {
+                            "X-CSRFToken": "{{ csrf_token }}",
+                            "Content-Type": "application/json",
+                        },
+                        body: JSON.stringify({ isActive: isActive })
                     })
-                    .catch(err => {
-                        console.error("Error:", err);
-                        alert('Error deleting product');
-                    });
-            }
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                Swal.fire(
+                                    'Updated!',
+                                    'Product status has been updated.',
+                                    'success'
+                                ).then(() => {
+                                    location.reload();
+                                });
+                            } else {
+                                Swal.fire(
+                                    'Error!',
+                                    'Something went wrong.',
+                                    'error'
+                                );
+                            }
+                        })
+                        .catch(err => console.error("Error:", err));
+                } else {
+                    // Revert checkbox state if cancelled
+                    location.reload();
+                }
+            })
         }
     </script>
 </body>

@@ -1,0 +1,177 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VARA - Manage Variants</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-[#FFFDF8] text-gray-800">
+    <!-- Sidebar -->
+    {% include 'sidebar.html' %}
+
+    <!-- Main Section -->
+    <div class="ml-64 min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="flex justify-between items-center px-8 py-4 bg-[#FFFDF8]">
+            <h1 class="text-2xl font-semibold text-[#6B3E26]">Variant</h1>
+            
+        </header>
+
+        <!-- Messages -->
+        {% if messages %}
+        <div class="px-8 mt-4">
+            {% for message in messages %}
+            <div
+                class="mb-4 p-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Product Info -->
+        <div class="px-8 mt-4">
+            <p class="text-lg text-gray-700"><span class="font-semibold">Product:</span> {{ product.title }}</p>
+        </div>
+
+        <!-- Existing Variants Section -->
+        <main class="flex-1 px-8 mt-6">
+            <h2 class="text-xl font-semibold text-gray-900 mb-4">Existing Variants</h2>
+
+            {% if variants %}
+            <div class="space-y-4">
+                {% for variant in variants %}
+                <div class="bg-[#F7F4ED] rounded-lg p-6 border border-[#E7E2D9]">
+                    <div class="grid grid-cols-3 gap-6 items-center">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Frame Type</label>
+                            <input type="text" value="{{ variant.variant_type }}" readonly
+                                class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Price</label>
+                            <input type="text" value="{{ variant.price }}" readonly
+                                class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700">
+                        </div>
+                        <div class="flex items-end justify-between">
+                            <div class="flex-1">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Stock</label>
+                                <input type="text" value="{{ variant.stock }}" readonly
+                                    class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg text-gray-700">
+                            </div>
+                            <button onclick="removeVariant({{ variant.id }})"
+                                class="ml-4 bg-[#FF7F5C] text-white px-4 py-2 rounded-lg hover:bg-[#ff6741] transition">
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="bg-[#F7F4ED] rounded-lg p-8 border border-[#E7E2D9] text-center">
+                <p class="text-gray-600">No variants added yet. Click "Add variant" to create one.</p>
+            </div>
+            {% endif %}
+
+            <!-- Add Variant Button -->
+            <div class="mt-6">
+                <button onclick="showAddVariantForm()"
+                    class="bg-[#8CC63F] text-white px-6 py-3 rounded-lg hover:bg-[#7bb236] transition font-medium">
+                    Add variant
+                </button>
+            </div>
+
+            <!-- Add Variant Form (Hidden by default) -->
+            <div id="addVariantForm" class="hidden mt-6 bg-white rounded-lg p-6 border border-[#E7E2D9] shadow-sm">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4">Add New Variant</h3>
+                <form method="POST" action="{% url 'add_variant' product.id %}">
+                    {% csrf_token %}
+                    <div class="grid grid-cols-3 gap-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Frame Type</label>
+                            <select name="variant_type" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8CC63F] outline-none">
+                                <option value="">Select Frame Type</option>
+                                <option value="gold">Gold</option>
+                                <option value="black">Black</option>
+                                <option value="silver">Silver</option>
+                                <option value="wooden">Wooden</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Price</label>
+                            <input type="number" name="price" step="0.01" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8CC63F] outline-none"
+                                placeholder="Enter price">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Stock</label>
+                            <input type="number" name="stock" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8CC63F] outline-none"
+                                placeholder="Enter stock">
+                        </div>
+                    </div>
+                    <div class="mt-4 flex gap-3">
+                        <button type="submit"
+                            class="bg-[#8CC63F] text-white px-6 py-2 rounded-lg hover:bg-[#7bb236] transition">
+                            Save Variant
+                        </button>
+                        <button type="button" onclick="hideAddVariantForm()"
+                            class="bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition">
+                            Cancel
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Back Button -->
+            <div class="mt-8">
+                <a href="{% url 'products' %}"
+                    class="inline-block bg-gray-300 text-gray-700 px-6 py-2 rounded-lg hover:bg-gray-400 transition">
+                    Back to Products
+                </a>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        function showAddVariantForm() {
+            document.getElementById('addVariantForm').classList.remove('hidden');
+        }
+
+        function hideAddVariantForm() {
+            document.getElementById('addVariantForm').classList.add('hidden');
+        }
+
+        function removeVariant(variantId) {
+            if (confirm('Are you sure you want to remove this variant?')) {
+                fetch(`/admin/variant/remove/${variantId}/`, {
+                    method: "POST",
+                    headers: {
+                        "X-CSRFToken": "{{ csrf_token }}",
+                        "Content-Type": "application/json"
+                    }
+                })
+                .then(res => res.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.reload();
+                    } else {
+                        alert('Error removing variant: ' + (data.error || 'Unknown error'));
+                    }
+                })
+                .catch(err => {
+                    console.error("Error:", err);
+                    alert('Error removing variant');
+                });
+            }
+        }
+    </script>
+</body>
+
+</html>

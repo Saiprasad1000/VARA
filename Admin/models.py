@@ -23,6 +23,13 @@ class Category(models.Model):
 
 class Variant(models.Model):
     id = models.AutoField(primary_key=True)
+    product = models.ForeignKey(
+        'Product',
+        on_delete=models.CASCADE,
+        related_name='variants',
+        null=True,
+        blank=True
+    )
     variant_type = models.CharField(max_length=150)
     price = models.DecimalField(max_digits=10, decimal_places=2)
     stock = models.PositiveIntegerField(default=0)
@@ -33,7 +40,7 @@ class Variant(models.Model):
         ordering = ['variant_type']
 
     def __str__(self):
-        return f"{self.variant_type}"
+        return f"{self.variant_type} - {self.product.title if self.product else 'No Product'}"
 
 
 

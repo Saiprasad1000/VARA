@@ -10,6 +10,8 @@ def index(request):
     return render(request, 'index.html', context)
 
 
+@never_cache
+@anonymous_required
 def signup(request):
     if request.method == "POST":
         first_name = request.POST.get("first_name", "").strip()
@@ -47,8 +49,12 @@ def signup(request):
             cache_key = f"otp_{email}"
             cache.set(cache_key, otp, timeout=300)  # 300 seconds = 5 minutes
             
-            # Send email asynchronously using Celery
-            send_welcome_email_task.delay(email, first_name,otp)
+            # Try Celery first; if worker/broker is down, fall back to direct send
+            try:
+                send_welcome_email_task.delay(email, first_name, otp)
+            except Exception as exc:
+                logger.warning("Celery unavailable while sending signup OTP, sending synchronously: %s", exc)
+                send_welcome_email_task(email, first_name, otp)
 
             messages.success(request, "Account created successfully! Please check your email.")
             return redirect("enter_otp")
@@ -72,6 +78,8 @@ def signup(request):
     return render(request, "signup.html")
 
 
+@never_cache
+@anonymous_required
 def signin(request):
     if request.method == "POST":
         email = request.POST.get("email", "").strip()
@@ -109,6 +117,8 @@ def signin(request):
 
     return render(request, "signin.html")
 
+@never_cache
+@anonymous_required
 def forgot_password(request):  
     if request.method == "POST":
         email = request.POST.get("email")
@@ -127,8 +137,12 @@ def forgot_password(request):
         # Save email in session
         request.session["email"] = email
 
-        # FIXED: correct order of arguments
-        send_forgot_password_email.delay(email, otp)
+        # Try Celery first; if worker/broker is down, fall back to direct send
+        try:
+            send_forgot_password_email.delay(email, otp)
+        except Exception as exc:
+            logger.warning("Celery unavailable while sending reset OTP, sending synchronously: %s", exc)
+            send_forgot_password_email(email, otp)
 
         messages.success(request, 'OTP sent! Please check your email.')
         return redirect("enter_otp_fp")
@@ -137,6 +151,8 @@ def forgot_password(request):
 
     
     
+@never_cache
+@anonymous_required
 def enter_otp_fp(request):
     try:
         if request.method == "POST":
@@ -178,6 +194,8 @@ def enter_otp_fp(request):
 
 
 
+@never_cache
+@anonymous_required
 def reset_password(request):
     """Reset password after OTP verification"""
     try:
@@ -222,6 +240,8 @@ def reset_password(request):
         messages.error(request, "An unexpected error occurred.")
         return redirect("forgot_password")
     
+@never_cache
+@anonymous_required
 def enter_otp(request):
     try:
         if request.method == "POST":
@@ -303,8 +323,12 @@ def resend_otp(request):
         cache_key = f"otp_{email}"
         cache.set(cache_key, otp, timeout=300)
 
-        # Send new OTP email via Celery
-        send_welcome_email_task.delay(email, first_name, otp)
+        # Send new OTP email; fall back to synchronous send if Celery is unavailable
+        try:
+            send_welcome_email_task.delay(email, first_name, otp)
+        except Exception as exc:
+            logger.warning("Celery unavailable while resending OTP, sending synchronously: %s", exc)
+            send_welcome_email_task(email, first_name, otp)
 
         if is_ajax:
             return JsonResponse({
@@ -350,6 +374,7 @@ def logout_view(request):
         logger.info(f"Logout error: {str(e)}")
         messages.error(request, "An error occurred while logging out.")
         return redirect("home")
-    
+
+@user_required
 def profile(request):
     return render(request,'profile.html')

@@ -51,7 +51,7 @@
           <!-- Right Side Icons -->
           <div class="flex items-center space-x-4">
             <!-- Search Form -->
-            <form method="GET" action="{% url 'search' %}" class="hidden lg:flex items-center" id="navbar-search-form">
+            <form method="GET" action="{% url 'home' %}" class="hidden lg:flex items-center" id="navbar-search-form">
               <div class="relative">
                 <input
                   type="text"
@@ -59,6 +59,7 @@
                   id="navbar-search-input"
                   placeholder="Search paintings..."
                   class="w-64 px-4 py-2 pl-10 pr-20 border border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                  value="{{ search_query|default_if_none:'' }}"
                 />
                 <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -302,7 +303,7 @@
 
       <!-- Mobile Search Bar -->
       <div id="mobile-search" class="hidden lg:hidden border-t border-gray-200">
-        <form method="GET" action="{% url 'search' %}" class="p-3" id="mobile-search-form">
+        <form method="GET" action="{% url 'home' %}" class="p-3" id="mobile-search-form">
           <div class="relative">
             <input
               type="text"
@@ -310,6 +311,7 @@
               id="mobile-search-input"
               placeholder="Search paintings..."
               class="w-full px-4 py-2 pl-10 pr-20 border border-gray-300 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+              value="{{ search_query|default_if_none:'' }}"
             />
             <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>

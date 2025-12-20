@@ -137,6 +137,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = 'User.CustomUser'
 
+# Redis Cache Configuration
 CACHES = {
     "default": {
         "BACKEND": "django_redis.cache.RedisCache",
@@ -147,9 +148,11 @@ CACHES = {
     }
 }
 
-# session storage via Redis
+# Session storage via Redis
 SESSION_ENGINE = "django.contrib.sessions.backends.cache"
 SESSION_CACHE_ALIAS = "default"
+
+# Celery Configuration
 CELERY_BROKER_URL = "redis://127.0.0.1:6379/0"
 CELERY_RESULT_BACKEND = "redis://127.0.0.1:6379/0"
 CELERY_ACCEPT_CONTENT = ['json']
@@ -158,6 +161,7 @@ CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Kolkata'
 
 
+# Email Configuration
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
@@ -165,6 +169,7 @@ EMAIL_USE_TLS = True
 EMAIL_HOST_USER = config('EMAIL_HOST_USER')
 EMAIL_HOST_PASSWORD = config('EMAIL_HOST_PASSWORD')
 
+# Django Allauth Configuration
 SITE_ID = 1
 
 AUTHENTICATION_BACKENDS = (
@@ -174,13 +179,13 @@ AUTHENTICATION_BACKENDS = (
 
 ACCOUNT_USERNAME_REQUIRED = False
 ACCOUNT_USER_MODEL_USERNAME_FIELD = None
-ACCOUNT_EMAIL_REQUIRED = True
-ACCOUNT_AUTHENTICATION_METHOD = 'email'
 ACCOUNT_EMAIL_VERIFICATION = 'none'
+
+ACCOUNT_LOGIN_METHODS = {'email'}
+ACCOUNT_SIGNUP_FIELDS = ['email*', 'password1*', 'password2*']
 
 SOCIALACCOUNT_AUTO_SIGNUP = True
 SOCIALACCOUNT_QUERY_EMAIL = True
-
 SOCIALACCOUNT_EMAIL_AUTHENTICATION = True
 
 LOGIN_REDIRECT_URL = '/'
@@ -188,6 +193,5 @@ LOGOUT_REDIRECT_URL = '/'
 
 ACCOUNT_ADAPTER = "User.adapters.MyAccountAdapter"
 SOCIALACCOUNT_ADAPTER = "User.adapters.MySocialAccountAdapter"
-
 
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
