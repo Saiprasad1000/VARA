@@ -1,0 +1,199 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Wishlist - VARA</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+
+<body class="bg-gray-50">
+
+    {% include "base/nav.html" %}
+    {% include "base/message.html" %}
+
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <h1 class="text-4xl font-bold text-gray-900 mb-8">My Wishlist</h1>
+
+        {% if wishlist_items %}
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {% for item in wishlist_items %}
+            <div class="bg-white rounded-lg shadow-sm overflow-hidden hover:shadow-md transition"
+                id="wishlist-item-{{ item.id }}">
+                <!-- Product Image -->
+                <div class="relative">
+                    {% if item.product.product_imgs %}
+                    <img src="{{ MEDIA_URL }}{{ item.product.product_imgs.0 }}" alt="{{ item.product.title }}"
+                        class="w-full h-64 object-cover">
+                    {% else %}
+                    <div class="w-full h-64 bg-gray-200 flex items-center justify-center">
+                        <svg class="w-16 h-16 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                            </path>
+                        </svg>
+                    </div>
+                    {% endif %}
+
+                    <!-- Remove Button (Top Right) -->
+                    <button onclick="removeFromWishlist({{ item.id }})"
+                        class="absolute top-3 right-3 bg-white rounded-full p-2 shadow-md hover:bg-red-50 transition">
+                        <svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Product Details -->
+                <div class="p-6">
+                    <h3 class="text-xl font-semibold text-gray-900 mb-2">{{ item.product.title }}</h3>
+                    <p class="text-gray-600 mb-2">{{ item.product.artist_name }}</p>
+
+                    {% if item.varient %}
+                    <p class="text-sm text-gray-500 mb-3">Variant: {{ item.varient.variant_type }}</p>
+                    {% endif %}
+
+                    <div class="flex items-center justify-between mb-4">
+                        <p class="text-2xl font-bold text-green-600">
+                            ₹{% if item.varient %}{{ item.varient.price }}{% else %}{{ item.product.price }}{% endif %}
+                        </p>
+                        <p class="text-sm text-gray-500">
+                            Added {{ item.added_at|date:"M d, Y" }}
+                        </p>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex gap-3">
+                        <button onclick="moveToCart({{ item.id }})"
+                            class="flex-1 bg-orange-500 text-white py-3 rounded-lg font-semibold hover:bg-orange-600 transition">
+                            Move to Cart
+                        </button>
+                        <a href="{% url 'product_detail' item.product.id %}"
+                            class="flex-1 bg-gray-200 text-gray-800 py-3 rounded-lg font-semibold hover:bg-gray-300 transition text-center">
+                            View Details
+                        </a>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        <!-- Summary Section -->
+        <div class="mt-8 bg-white rounded-lg shadow-sm p-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">{{ wishlist_items.count }} Item{{
+                        wishlist_items.count|pluralize }} in Wishlist</h2>
+                    <p class="text-gray-600 mt-1">Save your favorite items for later</p>
+                </div>
+                <a href="{% url 'home' %}"
+                    class="bg-gray-900 text-white px-8 py-3 rounded-lg font-semibold hover:bg-gray-800 transition">
+                    Continue Shopping
+                </a>
+            </div>
+        </div>
+        {% else %}
+        <!-- Empty Wishlist -->
+        <div class="bg-white rounded-lg shadow-sm p-12 text-center">
+            <svg class="w-24 h-24 mx-auto text-gray-400 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z">
+                </path>
+            </svg>
+            <h2 class="text-2xl font-semibold text-gray-900 mb-2">Your wishlist is empty</h2>
+            <p class="text-gray-600 mb-6">Save your favorite paintings to your wishlist!</p>
+            <a href="{% url 'home' %}"
+                class="inline-block bg-orange-500 text-white px-8 py-3 rounded-lg font-semibold hover:bg-orange-600 transition">
+                Explore Paintings
+            </a>
+        </div>
+        {% endif %}
+    </div>
+
+    {% include "base/footer.html" %}
+
+    <script>
+        function updateWishlistCount(count) {
+            const badge = document.getElementById('wishlist-count');
+            if (badge) {
+                badge.textContent = count;
+                badge.style.display = count > 0 ? 'flex' : 'none';
+            }
+        }
+
+        function updateCartCount(count) {
+            const badge = document.getElementById('cart-count');
+            if (badge) {
+                badge.textContent = count;
+                badge.style.display = count > 0 ? 'flex' : 'none';
+            }
+        }
+
+        function removeFromWishlist(itemId) {
+            if (confirm('Remove this item from your wishlist?')) {
+                fetch('/wishlist/remove/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: `wishlist_item_id=${itemId}`
+                })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            document.getElementById(`wishlist-item-${itemId}`).remove();
+                            updateWishlistCount(data.wishlist_count);
+
+                            // Reload page if wishlist is empty
+                            if (data.wishlist_count === 0) {
+                                location.reload();
+                            }
+                        } else {
+                            alert(data.message);
+                        }
+                    });
+            }
+        }
+
+        function moveToCart(itemId) {
+            fetch('/wishlist/move-to-cart/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: `wishlist_item_id=${itemId}`
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        document.getElementById(`wishlist-item-${itemId}`).remove();
+                        updateWishlistCount(data.wishlist_count);
+                        updateCartCount(data.cart_count);
+
+                        // Reload page if wishlist is empty
+                        if (data.wishlist_count === 0) {
+                            location.reload();
+                        }
+                    } else {
+                        alert(data.message);
+                    }
+                });
+        }
+    </script>
+
+</body>
+
+</html>

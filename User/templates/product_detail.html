@@ -33,13 +33,13 @@
                     <img id="mainImage" src="{{ MEDIA_URL }}{{ product.product_imgs.0 }}" alt="{{ product.title }}"
                         class="w-full h-auto object-contain rounded-lg">
                 </div>
-                
+
                 <!-- Thumbnail Gallery -->
                 {% if product.product_imgs|length > 1 %}
                 <div class="grid grid-cols-4 gap-3">
                     {% for img in product.product_imgs %}
                     <div class="cursor-pointer border-2 rounded-lg overflow-hidden hover:border-orange-500 transition-all duration-200 thumbnail-container {% if forloop.first %}border-orange-500{% else %}border-gray-200{% endif %}"
-                         onclick="changeMainImage('{{ MEDIA_URL }}{{ img }}', this)">
+                        onclick="changeMainImage('{{ MEDIA_URL }}{{ img }}', this)">
                         <img src="{{ MEDIA_URL }}{{ img }}" alt="{{ product.title }} - Image {{ forloop.counter }}"
                             class="w-full h-20 object-cover">
                     </div>
@@ -92,24 +92,31 @@
                 <!-- Product Information -->
                 <div class="space-y-3 text-gray-700">
                     <p class="text-lg"><span class="font-semibold">Category:</span> {{ product.category.name }}</p>
-                    <p class="text-lg"><span class="font-semibold">Publishing Date:</span> {{product.publishing_date|date:"d-m-Y" }}</p>
+                    <p class="text-lg"><span class="font-semibold">Publishing Date:</span>
+                        {{product.publishing_date|date:"d-m-Y" }}</p>
                     <p class="text-lg"><span class="font-semibold">Size:</span> 18X24</p>
                 </div>
 
                 <!-- Variant Selection - Dropdown -->
+                <!-- Hidden Product ID -->
+                <input type="hidden" id="product-id" value="{{ product.id }}">
+
                 {% if variants %}
                 <div class="space-y-2">
                     <label for="variant-select" class="block text-sm font-medium text-gray-700">Select Variant</label>
                     <select id="variant-select"
-                            class="mt-1 block w-full rounded-lg border border-gray-300 bg-white/80 py-2.5 px-3 text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-800 hover:border-orange-300 transition-colors duration-150">
+                        class="mt-1 block w-full rounded-lg border border-gray-300 bg-white/80 py-2.5 px-3 text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-800 hover:border-orange-300 transition-colors duration-150">
                         {% for variant in variants %}
-                        <option value="{{ variant.id }}" data-price="{{ variant.price }}" data-stock="{{ variant.stock }}">
+                        <option value="{{ variant.id }}" data-price="{{ variant.price }}"
+                            data-stock="{{ variant.stock }}">
                             {{ variant.variant_type }} - ₹{{ variant.price }} ({{ variant.stock }} in stock)
                         </option>
                         {% endfor %}
                     </select>
-                    <input type="hidden" id="selected-variant-id" value="{% if variants %}{{ variants.0.id }}{% endif %}">
-                    <input type="hidden" id="selected-variant-stock" value="{% if variants %}{{ variants.0.stock }}{% endif %}">
+                    <input type="hidden" id="selected-variant-id"
+                        value="{% if variants %}{{ variants.0.id }}{% endif %}">
+                    <input type="hidden" id="selected-variant-stock"
+                        value="{% if variants %}{{ variants.0.stock }}{% endif %}">
                 </div>
                 {% endif %}
 
@@ -141,7 +148,7 @@
 
                 <!-- Action Buttons -->
                 <div class="flex items-center space-x-4">
-                    <button
+                    <button onclick="add_to_cart()"
                         class="flex-1 bg-orange-500 text-white py-4 rounded-lg font-semibold hover:bg-orange-600 transition text-lg">
                         Add to Cart
                     </button>
@@ -149,7 +156,7 @@
                         class="flex-1 bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition text-lg">
                         Buy Now
                     </button>
-                    <button
+                    <button onclick="addToWishlist()"
                         class="w-14 h-14 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition">
                         <svg class="w-7 h-7 fill-current" viewBox="0 0 24 24">
                             <path
@@ -187,18 +194,18 @@
         function changeMainImage(imageSrc, thumbnailElement) {
             // Update main image
             document.getElementById('mainImage').src = imageSrc;
-            
+
             // Remove border from all thumbnails
             document.querySelectorAll('.thumbnail-container').forEach(container => {
                 container.classList.remove('border-orange-500');
                 container.classList.add('border-gray-200');
             });
-            
+
             // Add border to selected thumbnail
             thumbnailElement.classList.remove('border-gray-200');
             thumbnailElement.classList.add('border-orange-500');
         }
-        
+
         // Variant selection using dropdown
         function updateVariantFromSelect() {
             const select = document.getElementById('variant-select');
@@ -232,14 +239,14 @@
         }
 
         // Initialize variant selection and listen for changes
-        window.addEventListener('DOMContentLoaded', function() {
+        window.addEventListener('DOMContentLoaded', function () {
             const select = document.getElementById('variant-select');
             if (select) {
                 updateVariantFromSelect();
                 select.addEventListener('change', updateVariantFromSelect);
             }
         });
-        
+
         function incrementQuantity() {
             const input = document.getElementById('quantity');
             const max = parseInt(input.max);
@@ -256,6 +263,87 @@
             if (current > min) {
                 input.value = current - 1;
             }
+        }
+
+        function updateCartCount(count) {
+            const badge = document.getElementById('cart-count');
+            if (badge) {
+                badge.textContent = count;
+                badge.style.display = count > 0 ? 'inline' : 'none';
+            }
+        }
+
+        function add_to_cart() {
+            const productId = document.getElementById('product-id').value;
+            const variantId = document.getElementById('selected-variant-id').value;
+            const quantity = document.getElementById('quantity').value;
+            const stock = document.getElementById('selected-variant-stock').value;
+
+            if (parseInt(quantity) > parseInt(stock)) {
+                alert('Quantity exceeds available stock!');
+                return;
+            }
+
+            fetch('/cart/add/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: `product_id=${productId}&variant_id=${variantId}&quantity=${quantity}`
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        alert('Item added to cart!');
+                        updateCartCount(data.cart_count);
+                        if (data.wishlist_count !== undefined) {
+                            updateWishlistCount(data.wishlist_count);
+                        }
+                    } else {
+                        alert(data.message);
+                    }
+                });
+        }
+
+        function updateWishlistCount(count) {
+            const badge = document.getElementById('wishlist-count');
+            if (badge) {
+                badge.textContent = count;
+                badge.style.display = count > 0 ? 'flex' : 'none';
+            }
+        }
+
+        function addToWishlist() {
+            const productId = document.getElementById('product-id').value;
+            const variantId = document.getElementById('selected-variant-id').value;
+
+            fetch('/wishlist/add/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/x-www-form-urlencoded',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: `product_id=${productId}&variant_id=${variantId || ''}`
+            })
+                .then(response => {
+                    if (!response.ok) {
+                        throw new Error('Network response was not ok');
+                    }
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+                        alert(data.message);
+                        updateWishlistCount(data.wishlist_count);
+                    } else {
+                        alert(data.message);
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred while adding to wishlist. Please try again.');
+                });
         }
     </script>
 </body>

@@ -141,52 +141,88 @@
         </main>
     </div>
 
-    <!-- SweetAlert2 -->
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    <script>
-        function toggleCategoryStatus(categoryId) {
-            Swal.fire({
-                title: 'Are you sure?',
-                text: "Do you want to change the status of this category?",
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonColor: '#3085d6',
-                cancelButtonColor: '#d33',
-                confirmButtonText: 'Yes, change it!'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    fetch(`/admin/category/toggle/${categoryId}/`, {
-                        method: "POST",
-                        headers: {
-                            "X-CSRFToken": "{{ csrf_token }}",
-                        },
-                    })
-                    .then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            Swal.fire(
-                                'Updated!',
-                                'Category status has been updated.',
-                                'success'
-                            ).then(() => {
-                                location.reload();
-                            });
-                        } else {
-                            Swal.fire(
-                                'Error!',
-                                'Something went wrong.',
-                                'error'
-                            );
-                        }
-                    })
-                    .catch(err => console.error("Error:", err));
-                } else {
-                    // Revert checkbox state if cancelled
-                    location.reload();
-                }
-            })
+   <!-- SweetAlert2 -->
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+<script>
+    async function toggleCategoryStatus(categoryId, checkboxEl = null) {
+        const confirm = await Swal.fire({
+            title: 'Change category status?',
+            text: 'This will affect where the category appears on the platform.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, update',
+            cancelButtonText: 'No, keep as is',
+            reverseButtons: true,
+            background: '#FBF9F4',
+            color: '#1f2937',
+            confirmButtonColor: '#6366f1',
+            cancelButtonColor: '#e5e7eb',
+            customClass: {
+                popup: 'rounded-2xl shadow-xl',
+                confirmButton: 'px-6 py-2 text-sm font-medium rounded-lg',
+                cancelButton: 'px-6 py-2 text-sm font-medium rounded-lg'
+            }
+        });
+
+        if (!confirm.isConfirmed) {
+            if (checkboxEl) checkboxEl.checked = !checkboxEl.checked;
+            return;
         }
-    </script>
+
+        Swal.fire({
+            title: 'Updating category…',
+            text: 'Please wait a moment',
+            allowOutsideClick: false,
+            background: '#FBF9F4',
+            color: '#1f2937',
+            didOpen: () => Swal.showLoading()
+        });
+
+        try {
+            const response = await fetch(`/admin/category/toggle/${categoryId}/`, {
+                method: "POST",
+                headers: {
+                    "X-CSRFToken": "{{ csrf_token }}",
+                    "Accept": "application/json"
+                }
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || "Unable to update category.");
+            }
+
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: data.message || 'Category updated successfully',
+                showConfirmButton: false,
+                timer: 2500,
+                timerProgressBar: true,
+                background: '#FBF9F4',
+                color: '#065f46',
+            });
+
+        } catch (error) {
+            console.error("Category toggle error:", error);
+
+            if (checkboxEl) checkboxEl.checked = !checkboxEl.checked;
+
+            Swal.fire({
+                icon: 'error',
+                title: 'Update failed',
+                text: error.message || 'Please try again later.',
+                confirmButtonColor: '#ef4444',
+                background: '#FBF9F4',
+                color: '#7f1d1d'
+            });
+        }
+    }
+</script>
+
 </body>
 
 </html>
