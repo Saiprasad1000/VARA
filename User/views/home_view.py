@@ -8,7 +8,7 @@ from django.db.models import Q
 @user_required
 def home(request):
     # Base queryset: all non-deleted products
-    products = Product.objects.filter(is_deleted=False)
+    products = Product.objects.filter(is_deleted=False, category__isListed=True)
 
     # Read search, filter and sort parameters from query string
     search_query = request.GET.get('q') or request.GET.get('search') or ''
@@ -73,3 +73,10 @@ def home(request):
         'search_query': search_query,
     }
     return render(request, 'home.html', context)
+
+
+@never_cache
+@user_required
+def about_us(request):
+    return render(request, 'about_us.html')
+

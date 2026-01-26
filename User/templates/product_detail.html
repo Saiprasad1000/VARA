@@ -1,351 +1,410 @@
+{% extends "base/nav.html" %}
 {% load static %}
-<!DOCTYPE html>
-<html lang="en">
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ product.title }} - VARA</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+{% block title %}{{ product.title }} - VARA{% endblock %}
 
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-    </style>
-</head>
+{% block extra_head %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
-<body class="bg-gray-50">
+    body {
+        font-family: 'Inter', sans-serif;
+    }
+</style>
+{% endblock %}
 
-    <!-- Navigation -->
-    {% include "base/nav.html" %}
+{% block content %}
+<!-- Product Detail Section -->
+<section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
 
-    <!-- Product Detail Section -->
-    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-12">
+        <!-- Left Column - Product Images -->
+        <div class="bg-white rounded-lg p-8 space-y-4">
+            {% if product.product_imgs %}
+            <!-- Main Image Display with Zoom -->
+            <div class="w-full relative group" id="img-container">
+                <img id="mainImage" src="{{ MEDIA_URL }}{{ product.product_imgs.0 }}" alt="{{ product.title }}"
+                    class="w-full h-auto object-contain rounded-lg">
+                <!-- The Lens -->
+                <div id="lens"
+                    class="absolute border border-gray-400 bg-white/30 cursor-crosshair hidden pointer-events-none"
+                    style="width: 150px; height: 150px;"></div>
+            </div>
 
-            <!-- Left Column - Product Images -->
-            <div class="bg-white rounded-lg p-8 space-y-4">
-                {% if product.product_imgs %}
-                <!-- Main Image Display -->
-                <div class="w-full">
-                    <img id="mainImage" src="{{ MEDIA_URL }}{{ product.product_imgs.0 }}" alt="{{ product.title }}"
-                        class="w-full h-auto object-contain rounded-lg">
+            <!-- Zoom Result Window -->
+            <div id="zoom-result"
+                class="fixed top-1/2 left-1/2 -translate-y-1/2 ml-4 w-[500px] h-[500px] border border-gray-200 hidden z-[100] bg-white overflow-hidden shadow-2xl rounded-lg pointer-events-none"
+                style="left: calc(50% + 100px);"></div>
+
+            <!-- Thumbnail Gallery -->
+            {% if product.product_imgs|length > 1 %}
+            <div class="grid grid-cols-4 gap-3">
+                {% for img in product.product_imgs %}
+                <div class="cursor-pointer border-2 rounded-lg overflow-hidden hover:border-orange-500 transition-all duration-200 thumbnail-container {% if forloop.first %}border-orange-500{% else %}border-gray-200{% endif %}"
+                    onclick="changeMainImage('{{ MEDIA_URL }}{{ img }}', this)">
+                    <img src="{{ MEDIA_URL }}{{ img }}" alt="{{ product.title }} - Image {{ forloop.counter }}"
+                        class="w-full h-20 object-cover">
                 </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+            {% else %}
+            <div class="w-full h-96 bg-gray-200 flex items-center justify-center rounded-lg">
+                <svg class="w-24 h-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                    </path>
+                </svg>
+            </div>
+            {% endif %}
+        </div>
 
-                <!-- Thumbnail Gallery -->
-                {% if product.product_imgs|length > 1 %}
-                <div class="grid grid-cols-4 gap-3">
-                    {% for img in product.product_imgs %}
-                    <div class="cursor-pointer border-2 rounded-lg overflow-hidden hover:border-orange-500 transition-all duration-200 thumbnail-container {% if forloop.first %}border-orange-500{% else %}border-gray-200{% endif %}"
-                        onclick="changeMainImage('{{ MEDIA_URL }}{{ img }}', this)">
-                        <img src="{{ MEDIA_URL }}{{ img }}" alt="{{ product.title }} - Image {{ forloop.counter }}"
-                            class="w-full h-20 object-cover">
-                    </div>
+        <!-- Right Column - Product Details -->
+        <div class="space-y-6">
+            <!-- Title -->
+            <div>
+                <h1 class="text-4xl font-bold text-gray-900">{{ product.title }}</h1>
+                <p class="text-xl text-gray-600 mt-2">{{ product.artist_name }}</p>
+            </div>
+
+            <!-- Rating -->
+            <div class="flex items-center space-x-1">
+                <svg class="w-6 h-6 text-yellow-400 fill-current" viewBox="0 0 24 24">
+                    <path
+                        d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                </svg>
+                <svg class="w-6 h-6 text-yellow-400 fill-current" viewBox="0 0 24 24">
+                    <path
+                        d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                </svg>
+                <svg class="w-6 h-6 text-yellow-400 fill-current" viewBox="0 0 24 24">
+                    <path
+                        d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                </svg>
+                <svg class="w-6 h-6 text-yellow-400 fill-current" viewBox="0 0 24 24">
+                    <path
+                        d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                </svg>
+                <svg class="w-6 h-6 text-gray-300 fill-current" viewBox="0 0 24 24">
+                    <path
+                        d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                </svg>
+            </div>
+
+            <!-- Product Information -->
+            <div class="space-y-3 text-gray-700">
+                <p class="text-lg"><span class="font-semibold">Category:</span> {{ product.category.name }}</p>
+                <p class="text-lg"><span class="font-semibold">Publishing Date:</span>
+                    {{product.publishing_date|date:"d-m-Y" }}</p>
+                <p class="text-lg"><span class="font-semibold">Size:</span> 18X24</p>
+            </div>
+
+            <!-- Variant Selection - Dropdown -->
+            <!-- Hidden Product ID -->
+            <input type="hidden" id="product-id" value="{{ product.id }}">
+
+            {% if variants %}
+            <div class="space-y-2">
+                <label for="variant-select" class="block text-sm font-medium text-gray-700">Select Variant</label>
+                <select id="variant-select"
+                    class="mt-1 block w-full rounded-lg border border-gray-300 bg-white/80 py-2.5 px-3 text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-800 hover:border-orange-300 transition-colors duration-150">
+                    {% for variant in variants %}
+                    <option value="{{ variant.id }}" data-price="{{ variant.price }}" data-stock="{{ variant.stock }}">
+                        {{ variant.variant_type }} - ₹{{ variant.price }} ({{ variant.stock }} in stock)
+                    </option>
                     {% endfor %}
-                </div>
-                {% endif %}
-                {% else %}
-                <div class="w-full h-96 bg-gray-200 flex items-center justify-center rounded-lg">
-                    <svg class="w-24 h-24 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z">
+                </select>
+                <input type="hidden" id="selected-variant-id" value="{% if variants %}{{ variants.0.id }}{% endif %}">
+                <input type="hidden" id="selected-variant-stock"
+                    value="{% if variants %}{{ variants.0.stock }}{% endif %}">
+            </div>
+            {% endif %}
+
+            <!-- Price -->
+            <div>
+                <p class="text-5xl font-bold text-green-600">₹{{ product.price }}</p>
+            </div>
+
+            <!-- Quantity Selector -->
+            <div class="flex items-center space-x-4">
+                <button
+                    class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-300 transition"
+                    onclick="decrementQuantity()">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                    </svg>
+                </button>
+                <input type="number" id="quantity" value="1" min="1" max="{{ product.available_quantity }}"
+                    class="w-16 h-10 text-center border-2 border-gray-300 rounded-lg font-semibold">
+                <button
+                    class="w-10 h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center hover:bg-900 transition"
+                    onclick="incrementQuantity()">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
                         </path>
                     </svg>
-                </div>
-                {% endif %}
+                </button>
             </div>
 
-            <!-- Right Column - Product Details -->
-            <div class="space-y-6">
-                <!-- Title -->
-                <div>
-                    <h1 class="text-4xl font-bold text-gray-900">{{ product.title }}</h1>
-                    <p class="text-xl text-gray-600 mt-2">{{ product.artist_name }}</p>
-                </div>
-
-                <!-- Rating -->
-                <div class="flex items-center space-x-1">
-                    <svg class="w-6 h-6 text-yellow-400 fill-current" viewBox="0 0 24 24">
+            <!-- Action Buttons -->
+            <div class="flex items-center space-x-4">
+                <button onclick="add_to_cart()"
+                    class="flex-1 bg-orange-500 text-white py-4 rounded-lg font-semibold hover:bg-orange-600 transition text-lg">
+                    Add to Cart
+                </button>
+                <button
+                    class="flex-1 bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition text-lg">
+                    Buy Now
+                </button>
+                <button onclick="addToWishlist()"
+                    class="w-14 h-14 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition">
+                    <svg class="w-7 h-7 fill-current" viewBox="0 0 24 24">
                         <path
-                            d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
+                            d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
                     </svg>
-                    <svg class="w-6 h-6 text-yellow-400 fill-current" viewBox="0 0 24 24">
-                        <path
-                            d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                    </svg>
-                    <svg class="w-6 h-6 text-yellow-400 fill-current" viewBox="0 0 24 24">
-                        <path
-                            d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                    </svg>
-                    <svg class="w-6 h-6 text-yellow-400 fill-current" viewBox="0 0 24 24">
-                        <path
-                            d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                    </svg>
-                    <svg class="w-6 h-6 text-gray-300 fill-current" viewBox="0 0 24 24">
-                        <path
-                            d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
-                    </svg>
-                </div>
-
-                <!-- Product Information -->
-                <div class="space-y-3 text-gray-700">
-                    <p class="text-lg"><span class="font-semibold">Category:</span> {{ product.category.name }}</p>
-                    <p class="text-lg"><span class="font-semibold">Publishing Date:</span>
-                        {{product.publishing_date|date:"d-m-Y" }}</p>
-                    <p class="text-lg"><span class="font-semibold">Size:</span> 18X24</p>
-                </div>
-
-                <!-- Variant Selection - Dropdown -->
-                <!-- Hidden Product ID -->
-                <input type="hidden" id="product-id" value="{{ product.id }}">
-
-                {% if variants %}
-                <div class="space-y-2">
-                    <label for="variant-select" class="block text-sm font-medium text-gray-700">Select Variant</label>
-                    <select id="variant-select"
-                        class="mt-1 block w-full rounded-lg border border-gray-300 bg-white/80 py-2.5 px-3 text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-800 hover:border-orange-300 transition-colors duration-150">
-                        {% for variant in variants %}
-                        <option value="{{ variant.id }}" data-price="{{ variant.price }}"
-                            data-stock="{{ variant.stock }}">
-                            {{ variant.variant_type }} - ₹{{ variant.price }} ({{ variant.stock }} in stock)
-                        </option>
-                        {% endfor %}
-                    </select>
-                    <input type="hidden" id="selected-variant-id"
-                        value="{% if variants %}{{ variants.0.id }}{% endif %}">
-                    <input type="hidden" id="selected-variant-stock"
-                        value="{% if variants %}{{ variants.0.stock }}{% endif %}">
-                </div>
-                {% endif %}
-
-                <!-- Price -->
-                <div>
-                    <p class="text-5xl font-bold text-green-600">₹{{ product.price }}</p>
-                </div>
-
-                <!-- Quantity Selector -->
-                <div class="flex items-center space-x-4">
-                    <button
-                        class="w-10 h-10 bg-gray-200 rounded-lg flex items-center justify-center hover:bg-gray-300 transition"
-                        onclick="decrementQuantity()">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
-                        </svg>
-                    </button>
-                    <input type="number" id="quantity" value="1" min="1" max="{{ product.available_quantity }}"
-                        class="w-16 h-10 text-center border-2 border-gray-300 rounded-lg font-semibold">
-                    <button
-                        class="w-10 h-10 bg-gray-800 text-white rounded-lg flex items-center justify-center hover:bg-gray-900 transition"
-                        onclick="incrementQuantity()">
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
-                            </path>
-                        </svg>
-                    </button>
-                </div>
-
-                <!-- Action Buttons -->
-                <div class="flex items-center space-x-4">
-                    <button onclick="add_to_cart()"
-                        class="flex-1 bg-orange-500 text-white py-4 rounded-lg font-semibold hover:bg-orange-600 transition text-lg">
-                        Add to Cart
-                    </button>
-                    <button
-                        class="flex-1 bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition text-lg">
-                        Buy Now
-                    </button>
-                    <button onclick="addToWishlist()"
-                        class="w-14 h-14 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition">
-                        <svg class="w-7 h-7 fill-current" viewBox="0 0 24 24">
-                            <path
-                                d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" />
-                        </svg>
-                    </button>
-                </div>
-
-                <!-- Stock Info -->
-                <p class="text-sm text-gray-600">
-                    <span class="font-semibold">Availability:</span>
-                    {% if product.available_quantity > 0 %}
-                    <span class="text-green-600">In Stock ({{ product.available_quantity }} available)</span>
-                    {% else %}
-                    <span class="text-red-600">Out of Stock</span>
-                    {% endif %}
-                </p>
+                </button>
             </div>
+
+            <!-- Stock Info -->
+            <p class="text-sm text-gray-600">
+                <span class="font-semibold">Availability:</span>
+                {% if product.available_quantity > 0 %}
+                <span class="text-green-600">In Stock ({{ product.available_quantity }} available)</span>
+                {% else %}
+                <span class="text-red-600">Out of Stock</span>
+                {% endif %}
+            </p>
         </div>
+    </div>
 
-        <!-- Product Description -->
-        {% if product.description %}
-        <div class="mt-12 bg-white rounded-lg p-8">
-            <h2 class="text-2xl font-bold text-gray-900 mb-4">Description</h2>
-            <p class="text-gray-700 leading-relaxed">{{ product.description }}</p>
-        </div>
-        {% endif %}
-    </section>
+    <!-- Product Description -->
+    {% if product.description %}
+    <div class="mt-12 bg-white rounded-lg p-8">
+        <h2 class="text-2xl font-bold text-gray-900 mb-4">Description</h2>
+        <p class="text-gray-700 leading-relaxed">{{ product.description }}</p>
+    </div>
+    {% endif %}
+</section>
 
-    <!-- Footer -->
-    {% include "base/footer.html" %}
+{% include "base/footer.html" %}
 
-    <script>
-        // Image gallery functionality
-        function changeMainImage(imageSrc, thumbnailElement) {
-            // Update main image
-            document.getElementById('mainImage').src = imageSrc;
+<script>
+    // Image gallery functionality
+    function changeMainImage(imageSrc, thumbnailElement) {
+        const mainImg = document.getElementById('mainImage');
+        mainImg.src = imageSrc;
 
-            // Remove border from all thumbnails
-            document.querySelectorAll('.thumbnail-container').forEach(container => {
-                container.classList.remove('border-orange-500');
-                container.classList.add('border-gray-200');
-            });
-
-            // Add border to selected thumbnail
-            thumbnailElement.classList.remove('border-gray-200');
-            thumbnailElement.classList.add('border-orange-500');
-        }
-
-        // Variant selection using dropdown
-        function updateVariantFromSelect() {
-            const select = document.getElementById('variant-select');
-            if (!select) return;
-
-            const option = select.options[select.selectedIndex];
-            const variantId = option.value;
-            const variantPrice = option.dataset.price;
-            const variantStock = option.dataset.stock;
-
-            // Update hidden inputs
-            document.getElementById('selected-variant-id').value = variantId;
-            document.getElementById('selected-variant-stock').value = variantStock;
-
-            // Update price display
-            const priceElement = document.querySelector('.text-5xl.font-bold.text-green-600');
-            if (priceElement && variantPrice !== undefined) {
-                priceElement.textContent = '₹' + variantPrice;
-            }
-
-            // Update quantity max based on variant stock
-            const quantityInput = document.getElementById('quantity');
-            if (quantityInput && variantStock !== undefined) {
-                quantityInput.max = variantStock;
-                const current = parseInt(quantityInput.value) || 1;
-                const max = parseInt(variantStock);
-                if (current > max) {
-                    quantityInput.value = max;
-                }
-            }
-        }
-
-        // Initialize variant selection and listen for changes
-        window.addEventListener('DOMContentLoaded', function () {
-            const select = document.getElementById('variant-select');
-            if (select) {
-                updateVariantFromSelect();
-                select.addEventListener('change', updateVariantFromSelect);
-            }
+        // Remove border from all thumbnails
+        document.querySelectorAll('.thumbnail-container').forEach(container => {
+            container.classList.remove('border-orange-500');
+            container.classList.add('border-gray-200');
         });
 
-        function incrementQuantity() {
-            const input = document.getElementById('quantity');
-            const max = parseInt(input.max);
-            const current = parseInt(input.value);
-            if (current < max) {
-                input.value = current + 1;
-            }
+        // Add border to selected thumbnail
+        thumbnailElement.classList.remove('border-gray-200');
+        thumbnailElement.classList.add('border-orange-500');
+
+        // Reset zoom result background when main image changes
+        const zoomResult = document.getElementById('zoom-result');
+        if (zoomResult) {
+            zoomResult.style.backgroundImage = `url('${imageSrc}')`;
+        }
+    }
+
+    // Image Zoom Functionality
+    function initZoom() {
+        const container = document.getElementById('img-container');
+        const lens = document.getElementById('lens');
+        const result = document.getElementById('zoom-result');
+        const img = document.getElementById('mainImage');
+
+        if (!container || !lens || !result || !img) return;
+
+        container.addEventListener('mousemove', moveLens);
+        container.addEventListener('mouseenter', () => {
+            lens.classList.remove('hidden');
+            result.classList.remove('hidden');
+        });
+        container.addEventListener('mouseleave', () => {
+            lens.classList.add('hidden');
+            result.classList.add('hidden');
+        });
+
+        function moveLens(e) {
+            const rect = img.getBoundingClientRect();
+
+            // Calculate cursor position relative to image
+            let x = e.clientX - rect.left;
+            let y = e.clientY - rect.top;
+
+            // Center lens on cursor
+            x = x - (lens.offsetWidth / 2);
+            y = y - (lens.offsetHeight / 2);
+
+            // Prevent lens from going out of bounds
+            if (x > img.width - lens.offsetWidth) x = img.width - lens.offsetWidth;
+            if (x < 0) x = 0;
+            if (y > img.height - lens.offsetHeight) y = img.height - lens.offsetHeight;
+            if (y < 0) y = 0;
+
+            // Move lens
+            lens.style.left = x + "px";
+            lens.style.top = y + "px";
+
+            // Set zoom result background
+            result.style.backgroundImage = `url('${img.src}')`;
+            result.style.backgroundRepeat = "no-repeat";
+
+            // Calculate ratio
+            const cx = result.offsetWidth / lens.offsetWidth;
+            const cy = result.offsetHeight / lens.offsetHeight;
+
+            result.style.backgroundSize = (img.width * cx) + "px " + (img.height * cy) + "px";
+            result.style.backgroundPosition = "-" + (x * cx) + "px -" + (y * cy) + "px";
+        }
+    }
+
+    // Initialize Zoom when DOM is loaded
+    document.addEventListener('DOMContentLoaded', initZoom);
+
+    // Variant selection using dropdown
+    function updateVariantFromSelect() {
+        const select = document.getElementById('variant-select');
+        if (!select) return;
+
+        const option = select.options[select.selectedIndex];
+        const variantId = option.value;
+        const variantPrice = option.dataset.price;
+        const variantStock = option.dataset.stock;
+
+        // Update hidden inputs
+        document.getElementById('selected-variant-id').value = variantId;
+        document.getElementById('selected-variant-stock').value = variantStock;
+
+        // Update price display
+        const priceElement = document.querySelector('.text-5xl.font-bold.text-green-600');
+        if (priceElement && variantPrice !== undefined) {
+            priceElement.textContent = '₹' + variantPrice;
         }
 
-        function decrementQuantity() {
-            const input = document.getElementById('quantity');
-            const min = parseInt(input.min);
-            const current = parseInt(input.value);
-            if (current > min) {
-                input.value = current - 1;
+        // Update quantity max based on variant stock
+        const quantityInput = document.getElementById('quantity');
+        if (quantityInput && variantStock !== undefined) {
+            quantityInput.max = variantStock;
+            const current = parseInt(quantityInput.value) || 1;
+            const max = parseInt(variantStock);
+            if (current > max) {
+                quantityInput.value = max;
             }
         }
+    }
 
-        function updateCartCount(count) {
-            const badge = document.getElementById('cart-count');
-            if (badge) {
-                badge.textContent = count;
-                badge.style.display = count > 0 ? 'inline' : 'none';
-            }
+    // Initialize variant selection and listen for changes
+    window.addEventListener('DOMContentLoaded', function () {
+        const select = document.getElementById('variant-select');
+        if (select) {
+            updateVariantFromSelect();
+            select.addEventListener('change', updateVariantFromSelect);
+        }
+    });
+
+    function incrementQuantity() {
+        const input = document.getElementById('quantity');
+        const max = parseInt(input.max);
+        const current = parseInt(input.value);
+        if (current < max) {
+            input.value = current + 1;
+        }
+    }
+
+    function decrementQuantity() {
+        const input = document.getElementById('quantity');
+        const min = parseInt(input.min);
+        const current = parseInt(input.value);
+        if (current > min) {
+            input.value = current - 1;
+        }
+    }
+
+    function updateCartCount(count) {
+        const badge = document.getElementById('cart-count');
+        if (badge) {
+            badge.textContent = count;
+            badge.style.display = count > 0 ? 'inline' : 'none';
+        }
+    }
+
+    function add_to_cart() {
+        const productId = document.getElementById('product-id').value;
+        const variantId = document.getElementById('selected-variant-id').value;
+        const quantity = document.getElementById('quantity').value;
+        const stock = document.getElementById('selected-variant-stock').value;
+
+        if (parseInt(quantity) > parseInt(stock)) {
+            alert('Quantity exceeds available stock!');
+            return;
         }
 
-        function add_to_cart() {
-            const productId = document.getElementById('product-id').value;
-            const variantId = document.getElementById('selected-variant-id').value;
-            const quantity = document.getElementById('quantity').value;
-            const stock = document.getElementById('selected-variant-stock').value;
-
-            if (parseInt(quantity) > parseInt(stock)) {
-                alert('Quantity exceeds available stock!');
-                return;
-            }
-
-            fetch('/cart/add/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: `product_id=${productId}&variant_id=${variantId}&quantity=${quantity}`
-            })
-                .then(response => response.json())
-                .then(data => {
-                    if (data.success) {
-                        alert('Item added to cart!');
-                        updateCartCount(data.cart_count);
-                        if (data.wishlist_count !== undefined) {
-                            updateWishlistCount(data.wishlist_count);
-                        }
-                    } else {
-                        alert(data.message);
-                    }
-                });
-        }
-
-        function updateWishlistCount(count) {
-            const badge = document.getElementById('wishlist-count');
-            if (badge) {
-                badge.textContent = count;
-                badge.style.display = count > 0 ? 'flex' : 'none';
-            }
-        }
-
-        function addToWishlist() {
-            const productId = document.getElementById('product-id').value;
-            const variantId = document.getElementById('selected-variant-id').value;
-
-            fetch('/wishlist/add/', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/x-www-form-urlencoded',
-                    'X-CSRFToken': '{{ csrf_token }}'
-                },
-                body: `product_id=${productId}&variant_id=${variantId || ''}`
-            })
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Network response was not ok');
-                    }
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-                        alert(data.message);
+        fetch('/cart/add/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: `product_id=${productId}&variant_id=${variantId}&quantity=${quantity}`
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Item added to cart!');
+                    updateCartCount(data.cart_count);
+                    if (data.wishlist_count !== undefined) {
                         updateWishlistCount(data.wishlist_count);
-                    } else {
-                        alert(data.message);
                     }
-                })
-                .catch(error => {
-                    console.error('Error:', error);
-                    alert('An error occurred while adding to wishlist. Please try again.');
-                });
-        }
-    </script>
-</body>
+                } else {
+                    alert(data.message);
+                }
+            });
+    }
 
-</html>
+    function updateWishlistCount(count) {
+        const badge = document.getElementById('wishlist-count');
+        if (badge) {
+            badge.textContent = count;
+            badge.style.display = count > 0 ? 'flex' : 'none';
+        }
+    }
+
+    function addToWishlist() {
+        const productId = document.getElementById('product-id').value;
+        const variantId = document.getElementById('selected-variant-id').value;
+
+        fetch('/wishlist/add/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/x-www-form-urlencoded',
+                'X-CSRFToken': '{{ csrf_token }}'
+            },
+            body: `product_id=${productId}&variant_id=${variantId || ''}`
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    updateWishlistCount(data.wishlist_count);
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while adding to wishlist. Please try again.');
+            });
+    }
+</script>
+{% endblock %}

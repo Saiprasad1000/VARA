@@ -115,3 +115,71 @@ def send_forgot_password_email(email, otp):
         )
     except Exception as e:
         print("Email error:", e)
+
+@shared_task
+def send_update_email_otp(email, first_name, otp):
+    # Log OTP to server console
+    logger.info("Update Email OTP for %s is %s", email, otp)
+    
+    subject = "🔐 Verify Your New Email Address - VARA"
+    
+    message = (
+        f"Hello {first_name},\n\n"
+        f"You have requested to change your email address on VARA.\n"
+        f"Your verification OTP is: {otp}\n\n"
+        f"If you did not request this change, please contact support immediately.\n\n"
+        f"– The Vara Team"
+    )
+    
+    html_message = f"""
+    <html>
+        <body style="font-family: 'Segoe UI', sans-serif; background-color: #f9f9f9; padding: 30px; color: #333;">
+            <div style="max-width: 600px; margin: auto; background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); padding: 25px;">
+                <h2 style="text-align: center; color: #2b2b2b;">🔐 Verify Email Change</h2>
+                <p style="font-size: 16px;">Hi <strong>{first_name}</strong>,</p>
+                <p style="font-size: 16px; line-height: 1.6;">
+                    You have requested to update your email address associated with your Vara account.<br>
+                    Please use the valid OTP below to verify this change.
+                </p>
+
+                <div style="text-align: center; margin: 30px 0;">
+                    <div style="
+                        display: inline-block;
+                        background: linear-gradient(135deg, #f59e0b, #d97706);
+                        color: white;
+                        font-size: 32px;
+                        font-weight: bold;
+                        letter-spacing: 4px;
+                        padding: 15px 30px;
+                        border-radius: 10px;
+                        box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+                    ">
+                        {otp}
+                    </div>
+                </div>
+
+                <p style="font-size: 14px; color: #777;">
+                    If you did not request this change, please ignore this email or contact support.<br>
+                    This OTP is valid for 5 minutes.
+                </p>
+
+                <p style="font-size: 14px; color: #888; text-align: center; margin-top: 40px;">
+                    <strong>The Vara Team</strong>
+                </p>
+            </div>
+        </body>
+    </html>
+    """
+
+    try:
+        send_mail(
+            subject,
+            message,
+            settings.EMAIL_HOST_USER,
+            [email],
+            fail_silently=False,
+            html_message=html_message
+        )
+        return f"Update email OTP sent to {email}"
+    except Exception as e:
+        return f"Failed to send update email OTP: {str(e)}"

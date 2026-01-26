@@ -5,8 +5,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>VARA - Premium Paintings</title>
+  <title>{% block title %}VARA - Premium Paintings{% endblock %}</title>
   <script src="https://cdn.tailwindcss.com"></script>
+  {% block extra_head %}{% endblock %}
 </head>
 
 <body class="bg-white">
@@ -23,17 +24,11 @@
         <div class="hidden md:flex space-x-8">
           <a href="{% url 'home' %}"
             class="text-gray-900 hover:text-gray-600 px-3 py-2 text-sm font-medium border-b-2 border-transparent hover:border-gray-900">Home</a>
-          <a href="{% url 'digital_painting' %}"
-            class="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium border-b-2 border-transparent hover:border-gray-900">Digital
-            painting</a>
-          <a href="{% url 'acrylic_painting' %}"
-            class="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium border-b-2 border-transparent hover:border-gray-900">Acrylic
-            Painting</a>
-          <a href="{% url 'oil_painting' %}"
-            class="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium border-b-2 border-transparent hover:border-gray-900">Oil
-            Painting</a>
-          <a href="{% url 'offer' %}"
-            class="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium border-b-2 border-transparent hover:border-gray-900">Offer</a>
+          <a href="{% url 'home' %}"
+            class="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium border-b-2 border-transparent hover:border-gray-900">Products</a>
+          <a href="{% url 'about_us' %}"
+            class="text-gray-700 hover:text-gray-900 px-3 py-2 text-sm font-medium border-b-2 border-transparent hover:border-gray-900">About
+            Us</a>
         </div>
 
         <!-- Right Side Icons -->
@@ -181,14 +176,10 @@
       <div class="px-2 pt-2 pb-3 space-y-1">
         <a href="{% url 'home' %}"
           class="block px-3 py-2 text-base font-medium text-gray-900 hover:bg-gray-100 rounded-md">Home</a>
-        <a href="{% url 'digital_painting' %}"
-          class="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">Digital painting</a>
-        <a href="{% url 'acrylic_painting' %}"
-          class="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">Acrylic Painting</a>
-        <a href="{% url 'oil_painting' %}"
-          class="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">Oil Painting</a>
-        <a href="{% url 'offer' %}"
-          class="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">Offer</a>
+        <a href="{% url 'home' %}"
+          class="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">Products</a>
+        <a href="{% url 'about_us' %}"
+          class="block px-3 py-2 text-base font-medium text-gray-700 hover:bg-gray-100 rounded-md">About Us</a>
       </div>
     </div>
 
@@ -222,6 +213,9 @@
       </form>
     </div>
   </nav>
+
+  {% block content %}
+  {% endblock %}
 
   <!-- JavaScript -->
   <script>

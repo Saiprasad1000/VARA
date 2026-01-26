@@ -23,7 +23,7 @@ def add_to_wishlist(request):
         product_id = request.POST.get('product_id')
         variant_id = request.POST.get('variant_id')
         
-        product = get_object_or_404(Product, id=product_id, is_deleted=False)
+        product = get_object_or_404(Product, id=product_id, is_deleted=False, category__isListed=True)
         
         variant = None
         if variant_id:

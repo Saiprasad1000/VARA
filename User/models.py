@@ -119,4 +119,77 @@ class WishlistItems(models.Model):
         unique_together = ('wishlist', 'product', 'varient')
     
     def __str__(self):
-        return f"{self.product.title}"        
+        return f"{self.product.title}"
+
+
+class Address(models.Model):
+    ADDRESS_TYPE_CHOICES = (
+        ('Home', 'Home'),
+        ('Work', 'Work'),
+    )
+    
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='addresses')
+    name = models.CharField(max_length=100)
+    mobile = models.CharField(max_length=15)
+    street_address = models.CharField(max_length=255)
+    city = models.CharField(max_length=100)
+    state = models.CharField(max_length=100)
+    pincode = models.CharField(max_length=10)
+    address_type = models.CharField(max_length=10, choices=ADDRESS_TYPE_CHOICES, default='Home')
+    is_default = models.BooleanField(default=False)
+    
+    def __str__(self):
+        return f"{self.name} - {self.city}"
+    
+    def save(self, *args, **kwargs):
+        # If set as default, unset other default addresses for this user
+        if self.is_default:
+            Address.objects.filter(user=self.user, is_default=True).exclude(pk=self.pk).update(is_default=False)
+        super().save(*args, **kwargs)
+
+
+class Order(models.Model):
+    STATUS_CHOICES = (
+        ('Pending', 'Pending'),
+        ('Confirmed', 'Confirmed'),
+        ('Shipped', 'Shipped'),
+        ('Delivered', 'Delivered'),
+        ('Cancelled', 'Cancelled'),
+        ('Returned', 'Returned'),
+    )
+    
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='orders')
+    address = models.ForeignKey(Address, on_delete=models.SET_NULL, null=True)
+    total_amount = models.DecimalField(max_digits=10, decimal_places=2)
+    payment_method = models.CharField(max_length=50, default='COD')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    
+    def __str__(self):
+        return f"Order #{self.id} by {self.user.email}"
+
+
+class OrderItem(models.Model):
+    STATUS_CHOICES = (
+        ('Pending', 'Pending'),
+        ('Confirmed', 'Confirmed'),
+        ('Shipped', 'Shipped'),
+        ('Delivered', 'Delivered'),
+        ('Cancelled', 'Cancelled'),
+        ('Returned', 'Returned'),
+    )
+    
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE)
+    variant = models.ForeignKey(Variant, on_delete=models.SET_NULL, null=True, blank=True)
+    quantity = models.PositiveIntegerField(default=1)
+    price = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    return_reason = models.TextField(blank=True, null=True)
+    
+    def __str__(self):
+        return f"{self.quantity} x {self.product.title}"
+    
+    def get_subtotal(self):
+        return self.price * self.quantity

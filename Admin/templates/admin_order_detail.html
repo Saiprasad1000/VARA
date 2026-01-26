@@ -1,0 +1,153 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VARA - Order #{{ order.id }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+</head>
+
+<body class="bg-[#FFFDF8] text-gray-800">
+    <!-- Sidebar -->
+    {% include 'sidebar.html' %}
+
+    <!-- Main Section -->
+    <div class="ml-64 min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="flex justify-between items-center px-8 py-4 bg-[#FFFDF8] border-b border-[#E7E2D9]">
+            <div class="flex items-center gap-4">
+                <a href="{% url 'orders' %}" class="text-gray-500 hover:text-gray-800 transition">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                    </svg>
+                </a>
+                <h1 class="text-2xl font-bold text-gray-900">Order Details</h1>
+            </div>
+            <div class="flex items-center gap-4">
+                <a href="{% url 'logout' %}"
+                    class="bg-[#FF7F5C] text-white px-6 py-2 rounded-lg hover:bg-[#ff6741] transition">
+                    Log out
+                </a>
+            </div>
+        </header>
+
+        {% if messages %}
+        <div class="px-8 mt-4">
+            {% for message in messages %}
+            <div
+                class="p-4 rounded-lg {% if message.tags == 'error' %}bg-red-100 text-red-700{% else %}bg-green-100 text-green-700{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Content -->
+        <main class="flex-1 px-8 py-6">
+            <div class="max-w-4xl mx-auto space-y-6">
+
+                <!-- Order Header Info -->
+                <div class="flex justify-between items-center">
+                    <div class="text-gray-600">
+                        <span class="font-medium">Order ID:</span>
+                        <span class="text-gray-900 font-semibold">{{ order.id }}</span>
+                    </div>
+                    <div class="text-gray-600">
+                        {{ order.created_at|date:"F d, Y" }}
+                    </div>
+                </div>
+
+                <!-- Customer Details -->
+                <div class="bg-[#FBF9F4] rounded-xl shadow-sm border border-[#E7E2D9] p-6">
+                    <h2 class="text-lg font-bold text-gray-900 mb-4">Customer Details</h2>
+                    <div class="space-y-2 text-gray-700">
+                        <div>
+                            <span class="font-semibold text-gray-900">Name:</span>
+                            <span>{{ order.user.first_name }} {{ order.user.last_name }}</span>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-gray-900">Email:</span>
+                            <span>{{ order.user.email }}</span>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-gray-900">Address:</span>
+                            {% if order.address %}
+                            <span>{{ order.address.street_address }}, {{ order.address.city }}, {{ order.address.state}}, {{ order.address.pincode }}</span>
+                            {% else %}
+                            <span class="text-gray-500 italic">No address provided</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Ordered Items -->
+                <div class="bg-[#FBF9F4] rounded-xl shadow-sm border border-[#E7E2D9] p-6">
+                    <h2 class="text-lg font-bold text-gray-900 mb-4">Ordered Items</h2>
+                    <div class="space-y-4">
+                        {% for item in order.items.all %}
+                        <div class="border-b border-[#E7E2D9] pb-4 last:border-b-0 last:pb-0">
+                            <div class="flex items-start justify-between mb-3">
+                                <div class="flex-1">
+                                    <a href="#" class="text-blue-600 hover:underline font-medium">
+                                        {{ item.product.title }}{% if item.variant %} ({{ item.variant.variant_type}}){% endif %}
+                                    </a>
+                                    <div class="text-sm text-gray-600 mt-1">
+                                        Quantity: {{ item.quantity }}
+                                    </div>
+                                    <div class="text-sm text-gray-600">
+                                        Price: ₹{{ item.price }}
+                                    </div>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <form method="POST" class="flex items-center gap-2">
+                                        {% csrf_token %}
+                                        <input type="hidden" name="item_id" value="{{ item.id }}">
+                                        <div class="flex flex-col items-end gap-1">
+                                            <label class="text-xs text-gray-600">Status</label>
+                                            <select name="item_status"
+                                                class="px-3 py-1.5 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8CC63F]">
+                                                {% for status_code, status_label in status_choices %}
+                                                <option value="{{ status_code }}" {% if item.status == status_code%}selected{% endif %}>
+                                                    {{ status_label }}
+                                                </option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <button type="submit"
+                                            class="mt-5 bg-[#8CC63F] text-white px-4 py-1.5 text-sm rounded-lg hover:bg-[#7bb236] transition font-medium">
+                                            Update
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+
+                <!-- Payment Status -->
+                <div class="bg-[#FBF9F4] rounded-xl shadow-sm border border-[#E7E2D9] p-6">
+                    <h2 class="text-lg font-bold text-gray-900 mb-4">Payment Status</h2>
+                    <div class="space-y-2 text-gray-700">
+                        <div>
+                            <span class="font-semibold text-gray-900">Status:</span>
+                            <span>{{ order.payment_method }}</span>
+                        </div>
+                        <div>
+                            <span class="font-semibold text-gray-900">Final Amount:</span>
+                            <span class="text-lg font-bold text-[#6B3E26]">₹{{ order.total_amount }}</span>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+    </div>
+
+</body>
+
+</html>

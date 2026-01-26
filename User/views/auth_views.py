@@ -2,7 +2,7 @@ from .common_imports import *
 
 def index(request):
     # Fetch products for the landing page
-    products = Product.objects.filter(is_deleted=False).order_by('-created_at')[:8]
+    products = Product.objects.filter(is_deleted=False, category__isListed=True).order_by('-created_at')[:8]
     
     context = {
         'best_sellers': products

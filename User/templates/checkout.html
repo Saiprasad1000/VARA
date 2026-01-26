@@ -1,0 +1,249 @@
+{% extends "base/nav.html" %}
+{% load static %}
+
+{% block title %}Checkout - VARA{% endblock %}
+
+{% block extra_head %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    body {
+        font-family: 'Inter', sans-serif;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+{% include "base/message.html" %}
+
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <h1 class="text-3xl font-bold text-gray-900 mb-8">Checkout</h1>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Left Side: Address Selection -->
+        <div class="lg:col-span-2 space-y-8">
+            <!-- Saved Addresses -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="text-xl font-bold text-gray-900">Delivery Address</h2>
+                    <button onclick="document.getElementById('add-address-modal').classList.remove('hidden')"
+                        class="text-orange-500 font-semibold hover:text-orange-600">
+                        + Add New Address
+                    </button>
+                </div>
+
+                <form id="checkout-form">
+                    {% if addresses %}
+                    <div class="space-y-4">
+                        {% for address in addresses %}
+                        <label
+                            class="block relative border rounded-lg p-4 cursor-pointer hover:border-orange-500 transition-colors {% if address.is_default %}border-orange-500 bg-orange-50{% else %}border-gray-200{% endif %}">
+                            <input type="radio" name="address_id" value="{{ address.id }}"
+                                class="absolute right-4 top-4 text-orange-500 focus:ring-orange-500" {% if address.is_default %}checked{% endif %}>
+
+                            <div class="pr-8">
+                                <div class="flex items-center gap-2 mb-1">
+                                    <span class="font-bold text-gray-900">{{ address.name }}</span>
+                                    <span
+                                        class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded">{{address.address_type}}</span>
+                                </div>
+                                <p class="text-gray-600 text-sm mb-1">{{ address.street_address }}</p>
+                                <p class="text-gray-600 text-sm mb-1">{{ address.city }}, {{ address.state }} -
+                                    {{address.pincode }}</p>
+                                <p class="text-gray-600 text-sm">Mobile: {{ address.mobile }}</p>
+                            </div>
+                        </label>
+                        {% endfor %}
+                    </div>
+                    {% else %}
+                    <p class="text-gray-500 text-center py-4">No addresses saved. Please add an address to proceed.
+                    </p>
+                    {% endif %}
+                </form>
+            </div>
+
+            <!-- Payment Method -->
+            <div class="bg-white rounded-lg shadow-sm p-6">
+                <h2 class="text-xl font-bold text-gray-900 mb-4">Payment Method</h2>
+                <label
+                    class="flex items-center gap-3 border border-orange-500 bg-orange-50 rounded-lg p-4 cursor-pointer">
+                    <input type="radio" name="payment" checked class="text-orange-500 focus:ring-orange-500">
+                    <span class="font-semibold text-gray-900">Cash on Delivery (COD)</span>
+                </label>
+            </div>
+        </div>
+
+        <!-- Right Side: Order Summary -->
+        <div class="lg:col-span-1">
+            <div class="bg-white rounded-lg shadow-sm p-6 sticky top-24">
+                <h2 class="text-xl font-bold text-gray-900 mb-6">Order Summary</h2>
+
+                <div class="space-y-4 mb-6 max-h-96 overflow-y-auto">
+                    {% for item in cart_items %}
+                    <div class="flex gap-4">
+                        {% if item.product.product_imgs %}
+                        <img src="{{ MEDIA_URL }}{{ item.product.product_imgs.0 }}" alt="{{ item.product.title }}"
+                            class="w-16 h-16 object-cover rounded-md">
+                        {% else %}
+                        <div class="w-16 h-16 bg-gray-200 rounded-md"></div>
+                        {% endif %}
+                        <div class="flex-1">
+                            <h4 class="text-sm font-semibold text-gray-900">{{ item.product.title }}</h4>
+                            <div class="flex justify-between mt-1">
+                                <p class="text-sm text-gray-500">Qty: {{ item.quantity }}</p>
+                                <p class="text-sm font-medium text-gray-900">₹{{ item.get_subtotal }}</p>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <div class="border-t pt-4 space-y-2">
+                    <div class="flex justify-between text-gray-600">
+                        <span>Subtotal</span>
+                        <span>₹{{ total }}</span>
+                    </div>
+                    <div class="flex justify-between text-gray-600">
+                        <span>Shipping</span>
+                        <span class="text-green-600">Free</span>
+                    </div>
+                    <div class="flex justify-between text-xl font-bold text-gray-900 mt-2 pt-2 border-t">
+                        <span>Total Amount</span>
+                        <span>₹{{ total }}</span>
+                    </div>
+                </div>
+
+                <button onclick="placeOrder()"
+                    class="w-full mt-6 bg-orange-500 text-white py-3 rounded-lg font-bold hover:bg-orange-600 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                    Place Order
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add Address Modal -->
+<div id="add-address-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-900">Add New Address</h2>
+            <button onclick="document.getElementById('add-address-modal').classList.add('hidden')"
+                class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+        </div>
+
+        <form id="add-address-form" onsubmit="addAddress(event)">
+            {% csrf_token %}
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+                    {{ form.name }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Mobile Number</label>
+                    {{ form.mobile }}
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Street Address</label>
+                    {{ form.street_address }}
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">City</label>
+                        {{ form.city }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">State</label>
+                        {{ form.state }}
+                    </div>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Pincode</label>
+                        {{ form.pincode }}
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Address Type</label>
+                        {{ form.address_type }}
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    {{ form.is_default }}
+                    <label class="text-sm text-gray-700">Make this my default address</label>
+                </div>
+
+                <button type="submit"
+                    class="w-full bg-orange-500 text-white py-3 rounded-lg font-bold hover:bg-orange-600 transition mt-4">
+                    Save Address
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+{% include "base/footer.html" %}
+
+<script>
+    function addAddress(event) {
+        event.preventDefault();
+        const form = document.getElementById('add-address-form');
+        const formData = new FormData(form);
+
+        fetch('{% url "add_address" %}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Headers': 'X-Requested-With'
+            }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || 'Error adding address');
+                }
+            });
+    }
+
+    function placeOrder() {
+        // Get selected address ID
+        const selectedAddress = document.querySelector('input[name="address_id"]:checked');
+
+        if (!selectedAddress) {
+            alert('Please select a delivery address');
+            return;
+        }
+
+        if (confirm('Are you sure you want to place this order?')) {
+            const formData = new FormData();
+            formData.append('address_id', selectedAddress.value);
+
+            fetch('{% url "place_order" %}', {
+                method: 'POST',
+                body: formData,
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        window.location.href = `/order-success/${data.order_id}/`;
+                    } else {
+                        alert(data.message || 'Error placing order');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                });
+        }
+    }
+</script>
+{% endblock %}

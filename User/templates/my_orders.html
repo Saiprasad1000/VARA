@@ -1,0 +1,104 @@
+{% extends "base/nav.html" %}
+{% load static %}
+
+{% block title %}My Orders - VARA{% endblock %}
+
+{% block extra_head %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    body {
+        font-family: 'Inter', sans-serif;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col md:flex-row gap-8">
+        <!-- Sidebar -->
+        {% include "includes/profile_sidebar.html" with active_tab="orders" %}
+
+        <!-- Main Content -->
+        <main class="flex-1">
+            <div class="bg-white rounded-lg shadow-sm p-8">
+                <!-- Header -->
+                <div class="mb-8">
+                    <h1 class="text-2xl font-bold text-gray-900 mb-1">My Orders</h1>
+                    <p class="text-gray-600">Track and view your order history</p>
+                </div>
+
+                {% if orders %}
+                <div class="space-y-6">
+                    {% for order in orders %}
+                    <div class="border rounded-lg p-6 hover:border-gray-300 transition-colors">
+                        <div class="flex flex-col md:flex-row justify-between md:items-center mb-4 pb-4 border-b gap-4">
+                            <div>
+                                <p class="text-sm text-gray-500">Order ID: <span class="font-medium text-gray-900">#{{order.id }}</span></p>
+                                <p class="text-sm text-gray-500">Date: <span
+                                        class="font-medium text-gray-900">{{order.created_at|date:"M d, Y" }}</span>
+                                </p>
+                            </div>
+                            <div>
+                                <span class="px-3 py-1 rounded-full text-sm font-medium 
+                                        {% if order.status == 'Delivered' %}bg-green-100 text-green-800
+                                        {% elif order.status == 'Cancelled' %}bg-red-100 text-red-800
+                                        {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                    {{ order.status }}
+                                </span>
+                            </div>
+                        </div>
+
+                        <div class="space-y-3 mb-4">
+                            {% for item in order.items.all %}
+                            <div class="flex items-center justify-between">
+                                <div class="flex items-center gap-3">
+                                    {% if item.product.product_imgs %}
+                                    <img src="{{ MEDIA_URL }}{{ item.product.product_imgs.0 }}"
+                                        alt="{{ item.product.title }}" class="w-12 h-12 object-cover rounded">
+                                    {% else %}
+                                    <div class="w-12 h-12 bg-gray-200 rounded"></div>
+                                    {% endif %}
+                                    <div>
+                                        <p class="text-sm font-semibold text-gray-900">{{ item.product.title }}</p>
+                                        <p class="text-xs text-gray-500">Qty: {{ item.quantity }}</p>
+                                    </div>
+                                </div>
+                                <p class="text-sm font-medium text-gray-900">₹{{ item.price }}</p>
+                            </div>
+                            {% endfor %}
+                        </div>
+
+                        <div class="flex justify-between items-center pt-4 border-t">
+                            <p class="text-lg font-bold text-gray-900">Total: ₹{{ order.total_amount }}</p>
+                            <a href="{% url 'user_order_detail' order.id %}"
+                                class="px-4 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors">
+                                View Details
+                            </a>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <div class="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <svg class="w-10 h-10 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 mb-2">No orders yet</h3>
+                    <p class="text-gray-500 mb-6">Looks like you haven't placed any orders yet.</p>
+                    <a href="{% url 'home' %}"
+                        class="bg-orange-500 text-white px-6 py-2 rounded-lg font-medium hover:bg-orange-600 transition">
+                        Start Shopping
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+</div>
+
+{% include "base/footer.html" %}
+{% endblock %}

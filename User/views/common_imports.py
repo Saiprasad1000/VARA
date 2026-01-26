@@ -7,6 +7,7 @@ from django.core.validators import validate_email
 from django.contrib.auth import authenticate, login
 from User.tasks import send_welcome_email_task
 from User.tasks import send_forgot_password_email
+from User.tasks import send_update_email_otp
 from User.utilites import generate_otp
 from django.core.cache import cache
 from django.core.exceptions import SuspiciousOperation

@@ -1,7 +1,7 @@
 
 from django.contrib import admin
 from django.urls import path,include
-from .views import admin_home,customers,sales_report,banner_management,category_views,product_views,offers_views
+from .views import admin_home,customers,sales_report,banner_management,category_views,product_views,offers_views,orders_views
 from .views.customers_views import toggle_user
 
 urlpatterns = [
@@ -17,7 +17,8 @@ urlpatterns = [
      path("product/<int:product_id>/variants/", product_views.manage_variants, name='manage_variants'),
      path("product/<int:product_id>/variant/add/", product_views.add_variant, name='add_variant'),
      path("variant/remove/<int:variant_id>/", product_views.remove_variant, name='remove_variant'),
-     path("orders/", admin_home,name='orders'),
+     path("orders/", orders_views.order_list, name='orders'),
+     path("orders/<int:order_id>/", orders_views.order_detail, name='vara_admin_order_detail_test'),
      path("customers/", customers,name='customers'),
      path("reviews/", admin_home,name='reviews'),
      path("offers/", offers_views.offers,name='offers'),

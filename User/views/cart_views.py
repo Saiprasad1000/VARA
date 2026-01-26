@@ -29,7 +29,7 @@ def add_to_cart(request):
         quantity = int(request.POST.get('quantity', 1))
         
         # Get product
-        product = get_object_or_404(Product, id=product_id, is_deleted=False)
+        product = get_object_or_404(Product, id=product_id, is_deleted=False, category__isListed=True)
         
         # Get variant if provided
         variant = None

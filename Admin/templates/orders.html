@@ -1,0 +1,180 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VARA - Orders</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-[#FFFDF8] text-gray-800">
+    <!-- Sidebar -->
+    {% include 'sidebar.html' %}
+
+    <!-- Main Section -->
+    <div class="ml-64 min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="flex justify-between items-center px-8 py-4 bg-[#FFFDF8]">
+            <h1 class="text-2xl font-semibold text-[#6B3E26]">Orders</h1>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 px-8 mt-6">
+
+            <!-- Filters & Search -->
+            <div class="bg-[#FBF9F4] rounded-xl shadow-sm p-4 mb-6 border border-[#E7E2D9]">
+                <form method="GET" class="flex flex-wrap items-center gap-4">
+
+                    <!-- Search -->
+                    <div class="flex-1 min-w-[200px]">
+                        <div class="relative">
+                            <input type="text" name="search" value="{{ search_query }}"
+                                placeholder="Search ID or Customer..."
+                                class="w-full pl-10 pr-4 py-2 bg-[#F7F4ED] border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7F5C]">
+                            <svg class="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none"
+                                stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Status Filter -->
+                    <div class="w-48">
+                        <select name="status"
+                            class="w-full px-4 py-2 bg-[#F7F4ED] border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7F5C] cursor-pointer"
+                            onchange="this.form.submit()">
+                            <option value="">All Statuses</option>
+                            {% for status_code, status_label in status_choices %}
+                            <option value="{{ status_code }}" {% if status_filter == status_code %}selected{% endif %}>{{
+                                status_label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Sort -->
+                    <div class="w-48">
+                        <select name="sort"
+                            class="w-full px-4 py-2 bg-[#F7F4ED] border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7F5C] cursor-pointer"
+                            onchange="this.form.submit()">
+                            <option value="created_at" {% if sort_by == 'created_at' %}selected{% endif %}>Newest First
+                            </option>
+                            <option value="date_asc" {% if sort_by == 'date_asc' %}selected{% endif %}>Oldest First
+                            </option>
+                            <option value="amount_desc" {% if sort_by == 'amount_desc' %}selected{% endif %}>Amount: High
+                                to Low</option>
+                            <option value="amount_asc" {% if sort_by == 'amount_asc' %}selected{% endif %}>Amount: Low to
+                                High</option>
+                        </select>
+                    </div>
+
+                    <!-- Reset Button -->
+                    <a href="{% url 'orders' %}"
+                        class="px-4 py-2 text-sm text-gray-600 hover:text-[#FF7F5C] hover:bg-gray-100 rounded-lg transition-colors">
+                        Clear
+                    </a>
+                </form>
+            </div>
+
+            <!-- Orders Table -->
+            <div class="bg-[#FBF9F4] rounded-xl shadow-sm overflow-hidden border border-[#E7E2D9]">
+                <div class="overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-[#F7F4ED]">
+                            <tr>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Order ID</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Date</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Customer</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Total</th>
+                                <th
+                                    class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Status</th>
+                                <th
+                                    class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Action</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#EDEAE3]">
+                            {% for order in orders %}
+                            <tr class="hover:bg-[#F9F6F1] transition-colors">
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">#{{ order.id}}
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    {{order.created_at|date:"Md, Y" }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    <div class="flex flex-col">
+                                        <span class="font-medium text-gray-900">{{ order.user.first_name }}
+                                            {{order.user.last_name }}</span>
+                                        <span class="text-xs text-gray-500">{{ order.user.email }}</span>
+                                    </div>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    ${{order.total_amount }}</td>
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full 
+                                        {% if order.status == 'Delivered' %}bg-green-100 text-green-800
+                                        {% elif order.status == 'Pending' %}bg-yellow-100 text-yellow-800
+                                        {% elif order.status == 'Shipped' %}bg-blue-100 text-blue-800
+                                        {% elif order.status == 'Confirmed' %}bg-indigo-100 text-indigo-800
+                                        {% elif order.status == 'Cancelled' %}bg-red-100 text-red-800
+                                        {% else %}bg-gray-100 text-gray-800{% endif %}">
+                                        {{ order.status }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-center text-sm font-medium">
+                                    <a href="{% url 'vara_admin_order_detail_test' order.id %}"
+                                        class="bg-[#8CC63F] text-white px-3 py-1.5 rounded-md hover:bg-[#7bb236] transition duration-150 ease-in-out">View</a>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="px-6 py-8 text-center text-gray-500">
+                                    No orders found.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if orders.has_other_pages %}
+            <div class="flex justify-center items-center mt-8 space-x-2 pb-8">
+                {% if orders.has_previous %}
+                <a href="?page={{ orders.previous_page_number }}&search={{ search_query }}&status={{ status_filter }}&sort={{ sort_by }}"
+                    class="px-3 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">Prev</a>
+                {% endif %}
+
+                {% for num in orders.paginator.page_range %}
+                {% if orders.number == num %}
+                <span class="px-3 py-1 rounded bg-[#8CC63F] text-white">{{ num }}</span>
+                {% elif num > orders.number|add:'-3' and num < orders.number|add:'3' %} <a
+                    href="?page={{ num }}&search={{ search_query }}&status={{ status_filter }}&sort={{ sort_by }}"
+                    class="px-3 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">{{
+                    num}}</a>
+                    {% endif %}
+                    {% endfor %}
+
+                    {% if orders.has_next %}
+                    <a href="?page={{ orders.next_page_number }}&search={{ search_query }}&status={{ status_filter }}&sort={{ sort_by }}"
+                        class="px-3 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">Next</a>
+                    {% endif %}
+            </div>
+            {% endif %}
+
+        </main>
+    </div>
+</body>
+
+</html>

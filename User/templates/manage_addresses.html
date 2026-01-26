@@ -1,0 +1,209 @@
+{% extends "base/nav.html" %}
+{% load static %}
+
+{% block title %}Manage Addresses - VARA{% endblock %}
+
+{% block extra_head %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+    body {
+        font-family: 'Inter', sans-serif;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex flex-col md:flex-row gap-8">
+        <!-- Sidebar -->
+        {% include "includes/profile_sidebar.html" with active_tab="addresses" %}
+
+        <!-- Main Content -->
+        <main class="flex-1">
+            <div class="bg-white rounded-lg shadow-sm p-8">
+                <div class="flex justify-between items-center mb-8">
+                    <div>
+                        <h1 class="text-2xl font-bold text-gray-900 mb-1">Manage Addresses</h1>
+                    </div>
+                    <button onclick="openModal('add-address-modal')"
+                        class="bg-orange-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-orange-600 transition flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4">
+                            </path>
+                        </svg>
+                        Add New Address
+                    </button>
+                </div>
+
+                {% if addresses %}
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {% for address in addresses %}
+                    <div
+                        class="border rounded-lg p-6 relative group hover:border-orange-500 transition-colors {% if address.is_default %}bg-orange-50 border-orange-200{% endif %}">
+                        {% if address.is_default %}
+                        <span
+                            class="absolute top-4 right-4 bg-orange-100 text-orange-600 text-xs px-2 py-1 rounded-full font-medium">Default</span>
+                        {% endif %}
+
+                        <div class="mb-4">
+                            <div class="flex items-center gap-2 mb-1">
+                                <span class="font-bold text-gray-900">{{ address.name }}</span>
+                                <span
+                                    class="bg-gray-100 text-gray-600 text-xs px-2 py-0.5 rounded">{{address.address_type}}</span>
+                            </div>
+                            <p class="text-gray-600 text-sm mb-1">{{ address.street_address }}</p>
+                            <p class="text-gray-600 text-sm mb-1">{{ address.city }}, {{ address.state }} -
+                                {{address.pincode }}</p>
+                            <p class="text-gray-600 text-sm">Mobile: {{ address.mobile }}</p>
+                        </div>
+
+                        <div class="flex gap-3 pt-4 border-t">
+                            <button onclick="editAddress('{{ address.id }}')"
+                                class="text-blue-600 hover:text-blue-800 text-sm font-medium">Edit</button>
+                            <div class="w-px bg-gray-300"></div>
+                            <button onclick="deleteAddress('{{ address.id }}')"
+                                class="text-red-500 hover:text-red-700 text-sm font-medium">Delete</button>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+                {% else %}
+                <div class="text-center py-12">
+                    <p class="text-gray-500 mb-6">No addresses saved yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Add Address Modal -->
+<div id="add-address-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-900">Add New Address</h2>
+            <button onclick="closeModal('add-address-modal')" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+        </div>
+        <form id="add-address-form" onsubmit="handleAddressSubmit(event, '{% url 'add_address_profile' %}')">
+            {% csrf_token %}
+            {% include "includes/address_form_fields.html" with form=form %}
+            <button type="submit"
+                class="w-full bg-orange-500 text-white py-3 rounded-lg font-bold hover:bg-orange-600 transition mt-4">Save
+                Address</button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Address Modal -->
+<div id="edit-address-modal"
+    class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-lg w-full max-w-lg p-6 max-h-[90vh] overflow-y-auto">
+        <div class="flex justify-between items-center mb-6">
+            <h2 class="text-xl font-bold text-gray-900">Edit Address</h2>
+            <button onclick="closeModal('edit-address-modal')" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+        </div>
+        <form id="edit-address-form">
+            {% csrf_token %}
+            {% include "includes/address_form_fields.html" with form=form %}
+            <button type="submit"
+                class="w-full bg-orange-500 text-white py-3 rounded-lg font-bold hover:bg-orange-600 transition mt-4">Update
+                Address</button>
+        </form>
+    </div>
+</div>
+
+{% include "base/footer.html" %}
+
+<script>
+    function openModal(modalId) {
+        document.getElementById(modalId).classList.remove('hidden');
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.add('hidden');
+    }
+
+    function handleAddressSubmit(event, url) {
+        event.preventDefault();
+        const form = event.target;
+        const formData = new FormData(form);
+
+        fetch(url, {
+            method: 'POST',
+            body: formData,
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    alert(data.message || 'Error saving address');
+                }
+            });
+    }
+
+    function editAddress(addressId) {
+        // Fetch address data
+        fetch(`/profile/address/get/${addressId}/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const address = data.address;
+                    const form = document.getElementById('edit-address-form');
+
+                    // Populate fields
+                    form.querySelector('[name="name"]').value = address.name;
+                    form.querySelector('[name="mobile"]').value = address.mobile;
+                    form.querySelector('[name="street_address"]').value = address.street_address;
+                    form.querySelector('[name="city"]').value = address.city;
+                    form.querySelector('[name="state"]').value = address.state;
+                    form.querySelector('[name="pincode"]').value = address.pincode;
+                    form.querySelector('[name="address_type"]').value = address.address_type;
+                    form.querySelector('[name="is_default"]').checked = address.is_default;
+
+                    // Update form submit handler
+                    form.onsubmit = function (e) {
+                        handleAddressSubmit(e, `/profile/address/edit/${addressId}/`);
+                    };
+
+                    openModal('edit-address-modal');
+                } else {
+                    alert('Error loading address details');
+                }
+            });
+    }
+
+    function deleteAddress(addressId) {
+        if (confirm('Are you sure you want to delete this address?')) {
+            fetch(`/profile/address/delete/${addressId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': '{{ csrf_token }}',
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        location.reload();
+                    } else {
+                        alert(data.message || 'Error deleting address');
+                    }
+                });
+        }
+    }
+</script>
+{% endblock %}

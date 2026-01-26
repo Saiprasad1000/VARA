@@ -9,7 +9,7 @@ from django.conf import settings
 def product_detail(request, product_id):
     """Display detailed information about a specific product"""
     # Fetch product, return 404 if not found or deleted
-    product = get_object_or_404(Product, id=product_id, is_deleted=False,)
+    product = get_object_or_404(Product, id=product_id, is_deleted=False, category__isListed=True)
     
     # Fetch variants specific to this product
     variants = Variant.objects.filter(product=product, isListed=True)

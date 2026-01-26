@@ -14,10 +14,15 @@ def validate_email_unique(email):
     if User.objects.filter(email=email).exists():
         raise ValidationError("Email already registered.")
 
-def validate_mobile(mobile):
+def validate_mobile(mobile, exclude_user_id=None):
     if not re.match(r'^\d{10}$', mobile):
         raise ValidationError("Mobile number must be 10 digits.")
-    if User.objects.filter(mobile=mobile).exists():
+    
+    query = User.objects.filter(mobile=mobile)
+    if exclude_user_id:
+        query = query.exclude(id=exclude_user_id)
+        
+    if query.exists():
         raise ValidationError("Mobile number already registered.")
 
 def validate_password_strength(password):
