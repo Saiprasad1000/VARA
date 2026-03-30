@@ -154,20 +154,89 @@ class Order(models.Model):
         ('Confirmed', 'Confirmed'),
         ('Shipped', 'Shipped'),
         ('Delivered', 'Delivered'),
+        ('Cancel Requested', 'Cancel Requested'),
         ('Cancelled', 'Cancelled'),
+        ('Return Requested', 'Return Requested'),
         ('Returned', 'Returned'),
     )
+    
+    # Status progression priority (lower = earlier in pipeline)
+    STATUS_PRIORITY = {
+        'Pending': 1,
+        'Confirmed': 2,
+        'Shipped': 3,
+        'Delivered': 4,
+        'Cancel Requested': 5,
+        'Cancelled': 6,
+        'Return Requested': 7,
+        'Returned': 8,
+    }
+    
+    # Strict status transition map for state machine
+    VALID_TRANSITIONS = {
+        'Pending': ['Confirmed', 'Cancel Requested', 'Cancelled'],
+        'Confirmed': ['Shipped', 'Cancel Requested', 'Cancelled'],
+        'Shipped': ['Delivered'],
+        'Delivered': ['Return Requested', 'Returned'],
+        'Cancel Requested': ['Cancelled', 'Pending', 'Confirmed'], # Can approve (Cancelled) or reject (Pending/Confirmed)
+        'Cancelled': [],
+        'Return Requested': ['Returned', 'Delivered'], # Can approve (Returned) or reject (Delivered)
+        'Returned': [],
+    }
     
     user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='orders')
     address = models.ForeignKey(Address, on_delete=models.SET_NULL, null=True)
     total_amount = models.DecimalField(max_digits=10, decimal_places=2)
     payment_method = models.CharField(max_length=50, default='COD')
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Pending')
+    
+    # Razorpay fields
+    razorpay_order_id = models.CharField(max_length=100, blank=True, null=True)
+    razorpay_payment_id = models.CharField(max_length=100, blank=True, null=True)
+    razorpay_signature = models.CharField(max_length=255, blank=True, null=True)
+    
+    PAYMENT_STATUS_CHOICES = (
+        ('Pending', 'Pending'),
+        ('Paid', 'Paid'),
+        ('Failed', 'Failed'),
+        ('Payment Pending', 'Payment Pending'),
+    )
+    payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='Pending')
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
     def __str__(self):
         return f"Order #{self.id} by {self.user.email}"
+    
+    @classmethod
+    def is_valid_transition(cls, from_status, to_status):
+        """Check if a status transition is allowed."""
+        return to_status in cls.VALID_TRANSITIONS.get(from_status, [])
+    
+    def sync_status_from_items(self):
+        """Recalculate order status based on aggregated item statuses."""
+        items = self.items.all()
+        if not items.exists():
+            return
+        
+        active_items = items.exclude(status__in=['Cancelled', 'Returned'])
+        
+        if not active_items.exists():
+            # All items are in terminal states
+            all_returned = not items.exclude(status='Returned').exists()
+            self.status = 'Returned' if all_returned else 'Cancelled'
+            self.save(update_fields=['status'])
+            return
+        
+        # Order status = lowest-progress active item
+        active_statuses = list(active_items.values_list('status', flat=True))
+        lowest_status = min(
+            active_statuses,
+            key=lambda s: self.STATUS_PRIORITY.get(s, 0)
+        )
+        self.status = lowest_status
+        self.save(update_fields=['status'])
 
 
 class OrderItem(models.Model):
@@ -176,7 +245,9 @@ class OrderItem(models.Model):
         ('Confirmed', 'Confirmed'),
         ('Shipped', 'Shipped'),
         ('Delivered', 'Delivered'),
+        ('Cancel Requested', 'Cancel Requested'),
         ('Cancelled', 'Cancelled'),
+        ('Return Requested', 'Return Requested'),
         ('Returned', 'Returned'),
     )
     
@@ -193,3 +264,56 @@ class OrderItem(models.Model):
     
     def get_subtotal(self):
         return self.price * self.quantity
+
+class Wallet(models.Model):
+    user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='wallet')
+    balance = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"Wallet for {self.user.email} - Balance: ₹{self.balance}"
+
+    def credit(self, amount, description, order=None):
+        from decimal import Decimal
+        amount = Decimal(str(amount))
+        self.balance += amount
+        self.save(update_fields=['balance', 'updated_at'])
+        WalletTransaction.objects.create(
+            wallet=self,
+            transaction_type='Credit',
+            amount=amount,
+            description=description,
+            order=order
+        )
+
+    def debit(self, amount, description, order=None):
+        from decimal import Decimal
+        amount = Decimal(str(amount))
+        if self.balance >= amount:
+            self.balance -= amount
+            self.save(update_fields=['balance', 'updated_at'])
+            WalletTransaction.objects.create(
+                wallet=self,
+                transaction_type='Debit',
+                amount=amount,
+                description=description,
+                order=order
+            )
+            return True
+        return False
+
+class WalletTransaction(models.Model):
+    TRANSACTION_TYPES = (
+        ('Credit', 'Credit'),
+        ('Debit', 'Debit'),
+    )
+    wallet = models.ForeignKey(Wallet, on_delete=models.CASCADE, related_name='transactions')
+    transaction_type = models.CharField(max_length=10, choices=TRANSACTION_TYPES)
+    amount = models.DecimalField(max_digits=10, decimal_places=2)
+    description = models.CharField(max_length=255)
+    order = models.ForeignKey(Order, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.transaction_type} of ₹{self.amount} - {self.description}"

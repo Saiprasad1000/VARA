@@ -74,13 +74,12 @@
                             <p class="font-bold text-gray-900 text-lg">₹{{ item.get_subtotal }}</p>
 
                             <!-- Action Buttons Below Price -->
-                            {% if order.status == 'Delivered' and item.status == 'Delivered' %}
+                            {% if item.status == 'Delivered' %}
                             <button onclick="openReturnModal('{{ item.id }}')"
                                 class="px-4 py-2 text-sm bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium">
                                 Return Item
                             </button>
-                            {% elif item.status != 'Cancelled' and item.status != 'Returned' and order.status !=
-                            'Delivered' and order.status != 'Cancelled' %}
+                            {% elif item.status == 'Pending' or item.status == 'Confirmed' %}
                             <form action="{% url 'cancel_order_item' item.id %}" method="POST"
                                 onsubmit="return confirm('Are you sure you want to cancel this item?');">
                                 {% csrf_token %}
@@ -106,11 +105,27 @@
                         <span class="text-gray-600">Payment Method</span>
                         <span class="font-medium text-gray-900">{{ order.payment_method }}</span>
                     </div>
+                    <div class="flex justify-between items-center">
+                        <span class="text-gray-600">Payment Status</span>
+                        <span class="px-2 py-1 text-xs font-semibold rounded-full
+                            {% if order.payment_status == 'Paid' %}bg-green-100 text-green-800
+                            {% elif order.payment_status == 'Failed' %}bg-red-100 text-red-800
+                            {% elif order.payment_status == 'Payment Pending' %}bg-yellow-100 text-yellow-800
+                            {% else %}bg-gray-100 text-gray-800{% endif %}">
+                            {{ order.payment_status }}
+                        </span>
+                    </div>
                 </div>
 
                 <!-- Main Actions -->
                 <div class="flex justify-end gap-4">
-                    {% if order.status != 'Cancelled' and order.status != 'Delivered' and order.status != 'Returned'%}
+                    {% if order.payment_method == 'Razorpay' and order.payment_status in 'Payment Pending,Failed' %}
+                    <button onclick="retryPayment({{ order.id }})"
+                        class="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-bold transition">
+                        Retry Payment
+                    </button>
+                    {% endif %}
+                    {% if order.status == 'Pending' or order.status == 'Confirmed' %}
                     <form action="{% url 'cancel_order' order.id %}" method="POST"
                         onsubmit="return confirm('Are you sure you want to cancel the entire order?');">
                         {% csrf_token %}
@@ -164,5 +179,97 @@
     function closeReturnModal() {
         document.getElementById('returnModal').style.display = 'none';
     }
+
+    // Razorpay Retry Payment
+    function retryPayment(orderId) {
+        const btn = event.target;
+        btn.disabled = true;
+        btn.textContent = 'Processing...';
+
+        fetch(`/checkout/retry-payment/${orderId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': '{{ csrf_token }}',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const options = {
+                    key: data.key_id,
+                    amount: data.amount,
+                    currency: data.currency,
+                    name: 'VARA',
+                    description: 'Order Payment (Retry)',
+                    order_id: data.razorpay_order_id,
+                    prefill: {
+                        name: data.user_name,
+                        email: data.user_email,
+                        contact: data.user_phone
+                    },
+                    theme: {
+                        color: '#f97316'
+                    },
+                    handler: function (response) {
+                        // Verify payment
+                        fetch('{% url "verify_razorpay_payment" %}', {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                razorpay_order_id: response.razorpay_order_id,
+                                razorpay_payment_id: response.razorpay_payment_id,
+                                razorpay_signature: response.razorpay_signature,
+                                order_id: orderId
+                            }),
+                            headers: {
+                                'X-CSRFToken': '{{ csrf_token }}',
+                                'Content-Type': 'application/json'
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(verifyData => {
+                            if (verifyData.success) {
+                                window.location.href = `/order-success/${verifyData.order_id}/`;
+                            } else {
+                                alert(verifyData.message || 'Payment verification failed');
+                                location.reload();
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Verification error:', error);
+                            alert('Error verifying payment. Please check your order status.');
+                            location.reload();
+                        });
+                    },
+                    modal: {
+                        ondismiss: function () {
+                            btn.disabled = false;
+                            btn.textContent = 'Retry Payment';
+                        }
+                    }
+                };
+
+                const rzp = new Razorpay(options);
+                rzp.on('payment.failed', function (response) {
+                    alert('Payment failed: ' + response.error.description);
+                    location.reload();
+                });
+                rzp.open();
+            } else {
+                alert(data.message || 'Unable to retry payment');
+                btn.disabled = false;
+                btn.textContent = 'Retry Payment';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('An error occurred. Please try again.');
+            btn.disabled = false;
+            btn.textContent = 'Retry Payment';
+        });
+    }
 </script>
+
+<!-- Razorpay Checkout.js -->
+<script src="https://checkout.razorpay.com/v1/checkout.js"></script>
 {% endblock %}

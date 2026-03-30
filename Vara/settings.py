@@ -195,3 +195,7 @@ ACCOUNT_ADAPTER = "User.adapters.MyAccountAdapter"
 SOCIALACCOUNT_ADAPTER = "User.adapters.MySocialAccountAdapter"
 
 SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
+
+# Razorpay Configuration
+RAZORPAY_KEY_ID = config('RAZORPAY_KEY_ID')
+RAZORPAY_KEY_SECRET = config('RAZORPAY_KEY_SECRET')

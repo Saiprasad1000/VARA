@@ -6,11 +6,12 @@ from .views import home,index,signup,signin,forgot_password,enter_otp,logout_vie
 from .views.product_views import product_detail
 from .views.cart_views import add_to_cart, view_cart, update_cart, remove_from_cart, get_cart_count
 from .views.wishlist_views import add_to_wishlist, view_wishlist, remove_from_wishlist, get_wishlist_count, move_to_cart
-from .views.checkout_views import checkout, add_address, place_order, order_success
+from .views.checkout_views import checkout, add_address, place_order, order_success, create_razorpay_order, verify_razorpay_payment, retry_payment, place_wallet_order
 from .views.order_views import my_orders
 from .views.address_views import manage_addresses, add_address as add_address_profile, get_address, edit_address, delete_address
 from .views.profile_views import edit_profile, verify_email_change
 from .views.order_action_views import order_detail, cancel_order, cancel_order_item, return_order_item
+from .views.wallet_views import wallet_view, add_money as wallet_add_money, verify_wallet_payment
 
 urlpatterns = [
     path("", index,name='index'),
@@ -43,7 +44,11 @@ urlpatterns = [
     path('profile/edit/', edit_profile, name='edit_profile'),
     path('profile/verify-email-change/', verify_email_change, name='verify_email_change'),
 
-    path('wallet',home,name='wallet'),
+    # Wallet Custom
+    path('wallet/', wallet_view, name='wallet'),
+    path('wallet/add-money/', wallet_add_money, name='add_money'),
+    path('wallet/verify-payment/', verify_wallet_payment, name='verify_wallet_payment'),
+
     path('home/',home,name='home'),
     path('search/',home,name='search'),
     path('enter_otp_fp',enter_otp_fp,name='enter_otp_fp'),
@@ -64,10 +69,14 @@ urlpatterns = [
     path('wishlist/count/', get_wishlist_count, name='get_wishlist_count'),
     path('wishlist/move-to-cart/', move_to_cart, name='move_to_cart'),
 
-    # Checkout
+    # Checkout & Order Placement
     path('checkout/', checkout, name='checkout'),
-    path('checkout/add-address/', add_address, name='add_address'),
-    path('checkout/place-order/', place_order, name='place_order'),
+    path('add-address-ajax/', add_address, name='add_address'),
+    path('place-order/', place_order, name='place_order'),
+    path('place-wallet-order/', place_wallet_order, name='place_wallet_order'),
+    path('create-razorpay-order/', create_razorpay_order, name='create_razorpay_order'),
+    path('verify-razorpay-payment/', verify_razorpay_payment, name='verify_razorpay_payment'),
+    path('retry-payment/<int:order_id>/', retry_payment, name='retry_payment'),
     path('order-success/<int:order_id>/', order_success, name='order_success'),
 
     # Order Actions
