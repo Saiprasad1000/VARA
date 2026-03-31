@@ -3,6 +3,7 @@ from django.contrib import admin
 from django.urls import path,include
 from .views import admin_home,customers,sales_report,banner_management,category_views,product_views,offers_views,orders_views
 from .views.customers_views import toggle_user
+from .views.coupon_views import coupon_list, add_coupon, edit_coupon, toggle_coupon_status
 
 urlpatterns = [
      path("admin_home/", admin_home,name='admin_home'),
@@ -22,7 +23,10 @@ urlpatterns = [
      path("customers/", customers,name='customers'),
      path("reviews/", admin_home,name='reviews'),
      path("offers/", offers_views.offers,name='offers'),
-     path("coupons",admin_home,name='coupons'),
+     path("coupons/", coupon_list, name='coupons'),
+     path("coupons/add/", add_coupon, name='add_coupon'),
+     path("coupons/edit/<int:coupon_id>/", edit_coupon, name='edit_coupon'),
+     path("coupons/toggle/<int:coupon_id>/", toggle_coupon_status, name='toggle_coupon_status'),
      path("offers/add/", offers_views.add_offer,name='add_offer'),
      path("offers/edit/", offers_views.edit_offer,name='edit_offer'),
      path("sales_report",sales_report,name='sales_report'),

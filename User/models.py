@@ -1,6 +1,7 @@
 from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, BaseUserManager, PermissionsMixin
-from Admin.models import Product, Variant
+from Admin.models import Product, Variant, Category
+import secrets
 
 class CustomUserManager(BaseUserManager):
     def create_user(self, email, password=None, **extra_fields):
@@ -21,11 +22,18 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     first_name = models.CharField(max_length=50)
     last_name = models.CharField(max_length=50)
     email = models.EmailField(unique=True)
-    mobile = models.CharField(max_length=15, unique=True,blank=True, null=True)
-    referral_code = models.CharField(max_length=20, blank=True, null=True)
+    mobile = models.CharField(max_length=15, unique=True, blank=True, null=True)
+    referral_code = models.CharField(max_length=20, unique=True, blank=True, null=True)
+    referred_by = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='referrals_made'
+    )
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
-    pro_image = models.ImageField(upload_to='profile_images/', blank=True, null=True,max_length=255)
+    pro_image = models.ImageField(upload_to='profile_images/', blank=True, null=True, max_length=255)
     created_at = models.DateTimeField(auto_now_add=True)
 
     objects = CustomUserManager()
@@ -36,7 +44,73 @@ class CustomUser(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return self.email
 
+    def save(self, *args, **kwargs):
+        """Auto-generate a unique referral code on first save."""
+        if not self.referral_code:
+            self.referral_code = self._generate_unique_referral_code()
+        super().save(*args, **kwargs)
 
+    @staticmethod
+    def _generate_unique_referral_code():
+        """Generate a unique 8-character uppercase referral code."""
+        while True:
+            code = secrets.token_urlsafe(6).upper()[:8]
+            if not CustomUser.objects.filter(referral_code=code).exists():
+                return code
+
+class Coupon(models.Model):
+    DISCOUNT_TYPES = (
+        ('Percentage', 'Percentage'),
+        ('Fixed', 'Fixed'),
+    )
+    code = models.CharField(max_length=50, unique=True)
+    discount_type = models.CharField(max_length=20, choices=DISCOUNT_TYPES, default='Percentage')
+    discount_value = models.DecimalField(max_digits=10, decimal_places=2)
+    min_order_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    max_discount = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    valid_from = models.DateTimeField()
+    valid_to = models.DateTimeField()
+    is_active = models.BooleanField(default=True)
+    usage_limit = models.PositiveIntegerField(default=0, help_text="0 means unlimited usage.")
+    per_user_limit = models.PositiveIntegerField(default=1)
+
+    applicable_products = models.ManyToManyField(Product, blank=True, related_name='coupons')
+    applicable_categories = models.ManyToManyField(Category, blank=True, related_name='coupons')
+    applicable_variants = models.ManyToManyField(Variant, blank=True, related_name='coupons')
+
+    # Referral coupon fields
+    is_referral_coupon = models.BooleanField(default=False)
+    created_for_user = models.ForeignKey(
+        'CustomUser',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='referral_coupons'
+    )
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return self.code
+
+    def save(self, *args, **kwargs):
+        if self.code:
+            self.code = self.code.strip()
+        super().save(*args, **kwargs)
+
+class CouponUsage(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='coupon_usages')
+    coupon = models.ForeignKey(Coupon, on_delete=models.CASCADE, related_name='usages')
+    usage_count = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        unique_together = ('user', 'coupon')
+
+    def __str__(self):
+        return f"{self.user.email} - {self.coupon.code} (Used: {self.usage_count})"
 
 class Cart(models.Model):
     user = models.OneToOneField(CustomUser,on_delete=models.CASCADE,related_name='cart',null=True,blank=True)
@@ -203,6 +277,9 @@ class Order(models.Model):
     )
     payment_status = models.CharField(max_length=20, choices=PAYMENT_STATUS_CHOICES, default='Pending')
     
+    coupon = models.ForeignKey(Coupon, on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
+    discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
+    
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -316,4 +393,29 @@ class WalletTransaction(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.transaction_type} of ₹{self.amount} - {self.description}"
+        return f"{self.transaction_type} of ₹{self.amount} - {self.description}"
+
+
+class Referral(models.Model):
+    """Tracks a successful referral event."""
+    referrer = models.ForeignKey(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='referral_events'
+    )
+    referred_user = models.OneToOneField(
+        CustomUser,
+        on_delete=models.CASCADE,
+        related_name='referral_record'
+    )
+    coupon = models.ForeignKey(
+        Coupon,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='referral_event'
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.referrer.email} referred {self.referred_user.email}"

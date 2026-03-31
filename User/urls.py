@@ -6,7 +6,7 @@ from .views import home,index,signup,signin,forgot_password,enter_otp,logout_vie
 from .views.product_views import product_detail
 from .views.cart_views import add_to_cart, view_cart, update_cart, remove_from_cart, get_cart_count
 from .views.wishlist_views import add_to_wishlist, view_wishlist, remove_from_wishlist, get_wishlist_count, move_to_cart
-from .views.checkout_views import checkout, add_address, place_order, order_success, create_razorpay_order, verify_razorpay_payment, retry_payment, place_wallet_order
+from .views.checkout_views import checkout, add_address, place_order, order_success, create_razorpay_order, verify_razorpay_payment, retry_payment, place_wallet_order, apply_coupon, remove_coupon
 from .views.order_views import my_orders
 from .views.address_views import manage_addresses, add_address as add_address_profile, get_address, edit_address, delete_address
 from .views.profile_views import edit_profile, verify_email_change
@@ -78,6 +78,8 @@ urlpatterns = [
     path('verify-razorpay-payment/', verify_razorpay_payment, name='verify_razorpay_payment'),
     path('retry-payment/<int:order_id>/', retry_payment, name='retry_payment'),
     path('order-success/<int:order_id>/', order_success, name='order_success'),
+    path('apply-coupon/', apply_coupon, name='apply_coupon'),
+    path('remove-coupon/', remove_coupon, name='remove_coupon'),
 
     # Order Actions
     path('order/<int:order_id>/', order_detail, name='user_order_detail'),

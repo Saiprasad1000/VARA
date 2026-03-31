@@ -20,7 +20,7 @@ def signup(request):
         mobile = request.POST.get("mobile", "").strip()
         password = request.POST.get("password", "")
         confirm_password = request.POST.get("confirm_password", "")
-        referral_code = request.POST.get("referral_code", "")
+        referral_code = request.POST.get("referral_code", "").strip()
 
         try:
             request.session["email"] = email
@@ -40,15 +40,66 @@ def signup(request):
                 email=email,
                 mobile=mobile,
                 password=password,
-                referral_code=referral_code
             )
-           
+
+            # --- Referral Processing (server-side validation only) ---
+            if referral_code:
+                try:
+                    referrer = CustomUser.objects.get(referral_code=referral_code)
+                    # Prevent self-referral
+                    if referrer.pk != user.pk:
+                        from User.models import Coupon, Referral
+                        from django.conf import settings
+                        import secrets
+                        from datetime import timedelta
+                        from django.utils import timezone
+
+                        # Link the new user to the referrer
+                        user.referred_by = referrer
+                        user.save(update_fields=['referred_by'])
+
+                        # Generate a unique coupon code for the referrer
+                        while True:
+                            coupon_code = 'REF-' + secrets.token_urlsafe(8).upper()[:8]
+                            if not Coupon.objects.filter(code=coupon_code).exists():
+                                break
+
+                        discount_type = getattr(settings, 'REFERRAL_DISCOUNT_TYPE', 'Percentage')
+                        discount_value = getattr(settings, 'REFERRAL_DISCOUNT_VALUE', 10)
+                        min_order = getattr(settings, 'REFERRAL_COUPON_MIN_ORDER', 0)
+                        expiry_days = getattr(settings, 'REFERRAL_COUPON_EXPIRY_DAYS', 365)
+
+                        now = timezone.now()
+                        coupon = Coupon.objects.create(
+                            code=coupon_code,
+                            discount_type=discount_type,
+                            discount_value=discount_value,
+                            min_order_amount=min_order,
+                            valid_from=now,
+                            valid_to=now + timedelta(days=expiry_days),
+                            is_active=True,
+                            usage_limit=1,       # One-time global use
+                            per_user_limit=1,
+                            is_referral_coupon=True,
+                            created_for_user=referrer,
+                        )
+
+                        # Create referral tracking record
+                        Referral.objects.create(
+                            referrer=referrer,
+                            referred_user=user,
+                            coupon=coupon,
+                        )
+                except CustomUser.DoesNotExist:
+                    pass  # Invalid referral code — silently ignore, signup still succeeds
+            # --- End Referral Processing ---
+
             otp = generate_otp()
-            
+
              # Store OTP in Redis cache with expiry (e.g., 5 minutes)
             cache_key = f"otp_{email}"
             cache.set(cache_key, otp, timeout=300)  # 300 seconds = 5 minutes
-            
+
             # Try Celery first; if worker/broker is down, fall back to direct send
             try:
                 send_welcome_email_task.delay(email, first_name, otp)
@@ -75,7 +126,9 @@ def signup(request):
         }
         return render(request, "signup.html", context)
 
-    return render(request, "signup.html")
+    # GET request: pre-fill referral code from URL ?ref= param
+    ref_code = request.GET.get("ref", "")
+    return render(request, "signup.html", {"referral_code": ref_code})
 
 
 @never_cache
@@ -377,4 +430,10 @@ def logout_view(request):
 
 @user_required
 def profile(request):
-    return render(request,'profile.html')
+    from User.models import Referral
+    referral_count = Referral.objects.filter(referrer=request.user).count()
+    referral_link = request.build_absolute_uri(f'/signup?ref={request.user.referral_code}')
+    return render(request, 'profile.html', {
+        'referral_link': referral_link,
+        'referral_count': referral_count,
+    })

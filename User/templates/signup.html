@@ -94,8 +94,20 @@
       </script>
 
       <!-- Referral Code -->
-      <input type="text" name="referral_code" placeholder="Referral Code (Optional)"
+      <input type="text" name="referral_code" id="referral_code" placeholder="Referral Code (Optional)"
+        value="{{ referral_code|default:'' }}"
         class="w-full px-4 py-3 bg-gray-100 rounded-xl focus:outline-none focus:ring-2 focus:ring-gray-300" />
+      <script>
+        // Auto-fill referral code from URL ?ref= param (fallback for direct links)
+        (function() {
+          var field = document.getElementById('referral_code');
+          if (field && !field.value) {
+            var params = new URLSearchParams(window.location.search);
+            var ref = params.get('ref');
+            if (ref) field.value = ref;
+          }
+        })();
+      </script>
 
       <!-- Submit Button -->
       <button type="submit" class="w-full bg-black text-white py-3 rounded-xl mt-4 hover:bg-gray-800 transition">

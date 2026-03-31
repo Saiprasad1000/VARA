@@ -6,7 +6,10 @@ from django.views.decorators.cache import never_cache
 from django.views.decorators.http import require_http_methods
 from django.db import transaction
 from django.conf import settings
-from User.models import Cart, CartItems, Address, Order, OrderItem
+from User.models import Cart, CartItems, Address, Order, OrderItem, Coupon, CouponUsage
+from django.db.models import Sum
+from decimal import Decimal
+from django.utils import timezone
 from User.forms import AddressForm
 import razorpay
 import json
@@ -15,6 +18,108 @@ import json
 # Initialize Razorpay client
 razorpay_client = razorpay.Client(auth=(settings.RAZORPAY_KEY_ID, settings.RAZORPAY_KEY_SECRET))
 
+def calculate_coupon_discount(coupon_code, user, cart_items, total_amount):
+    print(f"\n--- COUPON APPLICATION TRACE ---")
+    print(f"1. Attempting to apply coupon: '{coupon_code}'")
+    
+    # 1. Existence check
+    try:
+        coupon = Coupon.objects.get(code=coupon_code)
+        print(f"   -> Found coupon in database: {coupon.code}")
+    except Coupon.DoesNotExist:
+        print(f"   -> FAILED: Coupon '{coupon_code}' does not exist (Remember: codes are case-sensitive).")
+        return False, "Invalid coupon code.", Decimal('0.00'), None
+        
+    # 2. Active status check
+    print(f"2. Checking active status...")
+    if not coupon.is_active:
+        print(f"   -> FAILED: Coupon {coupon.code} is marked as inactive.")
+        return False, "This coupon is no longer active.", Decimal('0.00'), None
+        
+    # 3. Date check
+    now = timezone.now()
+    print(f"3. Checking dates... Server Time: {now} | Valid From: {coupon.valid_from} | Valid To: {coupon.valid_to}")
+    if now < coupon.valid_from or now > coupon.valid_to:
+        print(f"   -> FAILED: Current time falls outside of the valid from/to range.")
+        return False, "This coupon is expired or not yet valid.", Decimal('0.00'), None
+        
+    # 4. Global limits
+    print("4. Checking global usage limits...")
+    if coupon.usage_limit > 0:
+        total_uses = CouponUsage.objects.filter(coupon=coupon).aggregate(Sum('usage_count'))['usage_count__sum'] or 0
+        print(f"   -> Global Uses: {total_uses} / Limit: {coupon.usage_limit}")
+        if total_uses >= coupon.usage_limit:
+            print("   -> FAILED: Global usage limit reached.")
+            return False, "Coupon usage limit reached.", Decimal('0.00'), None
+            
+    # 5. User limits
+    print("5. Checking per-user limits...")
+    usage = CouponUsage.objects.filter(user=user, coupon=coupon).first()
+    user_uses = usage.usage_count if usage else 0
+    print(f"   -> User '{user.email}' Uses: {user_uses} / Limit: {coupon.per_user_limit}")
+    if user_uses >= coupon.per_user_limit:
+        print("   -> FAILED: User limit reached.")
+        return False, "You have reached the maximum usage limit for this coupon.", Decimal('0.00'), None
+        
+    # 6. Min amount check
+    total_amount_dec = Decimal(str(total_amount))
+    print(f"6. Checking min order amount... Cart Total: {total_amount_dec} | Required: {coupon.min_order_amount}")
+    if total_amount_dec < coupon.min_order_amount:
+        print("   -> FAILED: Min order amount not met.")
+        return False, f"Minimum order amount of ₹{coupon.min_order_amount} required.", Decimal('0.00'), None
+        
+    # 7. Scope Check
+    print("7. Checking category/product scoping...")
+        
+    applicable_products = list(coupon.applicable_products.values_list('id', flat=True))
+    applicable_categories = list(coupon.applicable_categories.values_list('id', flat=True))
+    applicable_variants = list(coupon.applicable_variants.values_list('id', flat=True))
+    
+    is_global = not (applicable_products or applicable_categories or applicable_variants)
+    
+    eligible_subtotal = Decimal('0.00')
+    has_eligible_item = False
+    
+    for item in cart_items:
+        is_eligible = False
+        if is_global:
+            is_eligible = True
+        else:
+            if applicable_products and item.product.id in applicable_products:
+                is_eligible = True
+            elif applicable_categories and item.product.category.id in applicable_categories:
+                is_eligible = True
+            elif applicable_variants and item.varient and item.varient.id in applicable_variants:
+                is_eligible = True
+                
+        if is_eligible:
+            has_eligible_item = True
+            item_subtotal = Decimal(str(item.get_subtotal()))
+            eligible_subtotal += item_subtotal
+            print(f"   -> [ELIGIBLE] Item: {item.product.title} (₹{item_subtotal})")
+        else:
+            print(f"   -> [INELIGIBLE] Item: {item.product.title}")
+            
+    print(f"   -> Total eligible amount for discount: ₹{eligible_subtotal}")
+    if not has_eligible_item:
+        print("   -> FAILED: No items in cart matched the coupon scopes.")
+        return False, "This coupon is not applicable to any items in your cart.", Decimal('0.00'), None
+        
+    discount = Decimal('0.00')
+    if coupon.discount_type == 'Percentage':
+        discount = (eligible_subtotal * coupon.discount_value) / Decimal('100')
+        print(f"8. Discount Calculation (Percentage): {eligible_subtotal} * {coupon.discount_value}% = {discount}")
+        if coupon.max_discount:
+            discount = min(discount, coupon.max_discount)
+            print(f"   -> Apply max discount cap: {discount}")
+    else:
+        discount = min(coupon.discount_value, eligible_subtotal)
+        print(f"8. Discount Calculation (Fixed): min({coupon.discount_value}, {eligible_subtotal}) = {discount}")
+        
+    discount = min(discount, total_amount_dec)
+    print(f"   -> Final Discount Amount to Apply: ₹{discount}\n--- TRACE END ---\n")
+        
+    return True, "Coupon applied successfully!", discount, coupon
 
 @login_required
 @never_cache
@@ -40,16 +145,116 @@ def checkout(request):
     from User.models import Wallet
     wallet, _ = Wallet.objects.get_or_create(user=request.user)
     
+    subtotal = Decimal(str(cart.get_total()))
+    discount_amount = Decimal('0.00')
+    applied_coupon_code = None
+    
+    coupon_id = request.session.get('applied_coupon_id')
+    if coupon_id:
+        try:
+            coupon = Coupon.objects.get(id=coupon_id)
+            is_valid, msg, calculated_discount, _ = calculate_coupon_discount(coupon.code, request.user, cart_items, subtotal)
+            if is_valid:
+                discount_amount = calculated_discount
+                applied_coupon_code = coupon.code
+            else:
+                del request.session['applied_coupon_id']
+                if 'discount_amount' in request.session:
+                    del request.session['discount_amount']
+                messages.warning(request, f"Applied coupon removed: {msg}")
+        except Coupon.DoesNotExist:
+            del request.session['applied_coupon_id']
+            
+    final_total = subtotal - discount_amount
+
+    # Find an available referral coupon for this user (unused and still valid)
+    from django.utils import timezone as tz
+    from django.db.models import Sum
+    available_referral_coupon = None
+    referral_coupons = Coupon.objects.filter(
+        created_for_user=request.user,
+        is_referral_coupon=True,
+        is_active=True,
+        valid_to__gt=tz.now(),
+    )
+    for rc in referral_coupons:
+        # Check it hasn't been globally exhausted (usage_limit=1)
+        total_uses = rc.usages.aggregate(Sum('usage_count'))['usage_count__sum'] or 0
+        if total_uses < rc.usage_limit:
+            available_referral_coupon = rc
+            break
+    
     context = {
         'cart': cart,
         'cart_items': cart_items,
-        'total': cart.get_total(),
+        'subtotal': subtotal,
+        'discount_amount': discount_amount,
+        'applied_coupon_code': applied_coupon_code,
+        'total': final_total,
         'addresses': addresses,
         'form': form,
         'razorpay_key_id': settings.RAZORPAY_KEY_ID,
         'wallet': wallet,
+        'available_referral_coupon': available_referral_coupon,
     }
     return render(request, 'checkout.html', context)
+
+@login_required
+@never_cache
+@require_http_methods(["POST"])
+def apply_coupon(request):
+    try:
+        data = json.loads(request.body)
+        code = data.get('code')
+    except:
+        code = request.POST.get('code')
+        
+    if not code:
+        return JsonResponse({'success': False, 'message': 'Coupon code is required'})
+        
+    try:
+        cart = Cart.objects.get(user=request.user)
+        cart_items = cart.items.select_related('product', 'product__category', 'varient').all()
+        if not cart_items:
+            return JsonResponse({'success': False, 'message': 'Your cart is empty'})
+    except Cart.DoesNotExist:
+        return JsonResponse({'success': False, 'message': 'Cart not found'})
+        
+    subtotal = Decimal(str(cart.get_total()))
+    is_valid, message, discount, coupon = calculate_coupon_discount(code.strip().upper(), request.user, cart_items, subtotal)
+    
+    if is_valid:
+        request.session['applied_coupon_id'] = coupon.id
+        request.session['discount_amount'] = str(discount)
+        final_total = subtotal - discount
+        return JsonResponse({
+            'success': True, 
+            'message': message, 
+            'discount': str(discount),
+            'final_total': str(final_total),
+            'code': coupon.code,
+            'subtotal': str(subtotal)
+        })
+    else:
+        if 'applied_coupon_id' in request.session:
+            del request.session['applied_coupon_id']
+        return JsonResponse({'success': False, 'message': message})
+
+@login_required
+@never_cache
+@require_http_methods(["POST"])
+def remove_coupon(request):
+    if 'applied_coupon_id' in request.session:
+        del request.session['applied_coupon_id']
+    if 'discount_amount' in request.session:
+        del request.session['discount_amount']
+    
+    try:
+        cart = Cart.objects.get(user=request.user)
+        total = cart.get_total()
+        return JsonResponse({'success': True, 'message': 'Coupon removed', 'total': str(total), 'subtotal': str(total)})
+    except:
+        return JsonResponse({'success': False, 'message': 'Cart not found'})
 
 
 @login_required
@@ -139,7 +344,22 @@ def place_order(request):
         # Use transaction to ensure atomicity
         with transaction.atomic():
             # Calculate total
-            total_amount = cart.get_total()
+            subtotal = Decimal(str(cart.get_total()))
+            discount_amount = Decimal('0.00')
+            applied_coupon = None
+            
+            coupon_id = request.session.get('applied_coupon_id')
+            if coupon_id:
+                try:
+                    coupon = Coupon.objects.get(id=coupon_id)
+                    is_valid, _, calc_discount, _ = calculate_coupon_discount(coupon.code, request.user, cart_items, subtotal)
+                    if is_valid:
+                        discount_amount = calc_discount
+                        applied_coupon = coupon
+                except Coupon.DoesNotExist:
+                    pass
+                    
+            total_amount = subtotal - discount_amount
             
             # Create Order
             order = Order.objects.create(
@@ -148,8 +368,15 @@ def place_order(request):
                 total_amount=total_amount,
                 payment_method='COD',
                 payment_status='Pending',
-                status='Pending'
+                status='Pending',
+                coupon=applied_coupon,
+                discount_amount=discount_amount
             )
+            
+            if applied_coupon:
+                usage, _ = CouponUsage.objects.get_or_create(user=request.user, coupon=applied_coupon)
+                usage.usage_count += 1
+                usage.save()
             
             # Create Order Items and Update Stock
             for item in cart_items:
@@ -174,6 +401,10 @@ def place_order(request):
             
             # Clear cart after successful order
             cart_items.delete()
+            if 'applied_coupon_id' in request.session:
+                del request.session['applied_coupon_id']
+            if 'discount_amount' in request.session:
+                del request.session['discount_amount']
         
         return JsonResponse({
             'success': True, 
@@ -249,7 +480,22 @@ def create_razorpay_order(request):
         
         # Create Order + OrderItems + deduct stock inside a transaction
         with transaction.atomic():
-            total_amount = cart.get_total()
+            subtotal = Decimal(str(cart.get_total()))
+            discount_amount = Decimal('0.00')
+            applied_coupon = None
+            
+            coupon_id = request.session.get('applied_coupon_id')
+            if coupon_id:
+                try:
+                    coupon = Coupon.objects.get(id=coupon_id)
+                    is_valid, _, calc_discount, _ = calculate_coupon_discount(coupon.code, request.user, cart_items, subtotal)
+                    if is_valid:
+                        discount_amount = calc_discount
+                        applied_coupon = coupon
+                except Coupon.DoesNotExist:
+                    pass
+                    
+            total_amount = subtotal - discount_amount
             
             # Create Order with Payment Pending status
             order = Order.objects.create(
@@ -258,8 +504,15 @@ def create_razorpay_order(request):
                 total_amount=total_amount,
                 payment_method='Razorpay',
                 payment_status='Payment Pending',
-                status='Pending'
+                status='Pending',
+                coupon=applied_coupon,
+                discount_amount=discount_amount
             )
+            
+            if applied_coupon:
+                usage, _ = CouponUsage.objects.get_or_create(user=request.user, coupon=applied_coupon)
+                usage.usage_count += 1
+                usage.save()
             
             # Create Order Items and deduct stock
             for item in cart_items:
@@ -282,6 +535,10 @@ def create_razorpay_order(request):
             
             # Clear cart
             cart_items.delete()
+            if 'applied_coupon_id' in request.session:
+                del request.session['applied_coupon_id']
+            if 'discount_amount' in request.session:
+                del request.session['discount_amount']
         
         # Create Razorpay order
         amount_in_paise = int(total_amount * 100)
@@ -373,6 +630,27 @@ def place_wallet_order(request):
         
         # Use transaction to ensure atomicity
         with transaction.atomic():
+            subtotal = Decimal(str(cart.get_total()))
+            discount_amount = Decimal('0.00')
+            applied_coupon = None
+            
+            coupon_id = request.session.get('applied_coupon_id')
+            if coupon_id:
+                try:
+                    coupon = Coupon.objects.get(id=coupon_id)
+                    is_valid, _, calc_discount, _ = calculate_coupon_discount(coupon.code, request.user, cart_items, subtotal)
+                    if is_valid:
+                        discount_amount = calc_discount
+                        applied_coupon = coupon
+                except Coupon.DoesNotExist:
+                    pass
+                    
+            total_amount = subtotal - discount_amount
+            
+            # Verify wallet balance again for the final total
+            if wallet.balance < total_amount:
+                raise Exception("Insufficient Wallet Balance")
+
             # Deduct from Wallet
             wallet_success = wallet.debit(total_amount, "Order Payment via Wallet")
             if not wallet_success:
@@ -385,8 +663,15 @@ def place_wallet_order(request):
                 total_amount=total_amount,
                 payment_method='Wallet',
                 payment_status='Paid',
-                status='Pending'
+                status='Pending',
+                coupon=applied_coupon,
+                discount_amount=discount_amount
             )
+            
+            if applied_coupon:
+                usage, _ = CouponUsage.objects.get_or_create(user=request.user, coupon=applied_coupon)
+                usage.usage_count += 1
+                usage.save()
             
             # Label the transaction with order
             wallet_tx = wallet.transactions.last()
@@ -417,6 +702,10 @@ def place_wallet_order(request):
             
             # Clear cart after successful order
             cart_items.delete()
+            if 'applied_coupon_id' in request.session:
+                del request.session['applied_coupon_id']
+            if 'discount_amount' in request.session:
+                del request.session['discount_amount']
         
         return JsonResponse({
             'success': True, 

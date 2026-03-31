@@ -1,0 +1,99 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VARA - Coupons</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-[#FFFDF8] text-gray-800">
+    <!-- Sidebar -->
+    {% include 'sidebar.html' %}
+
+    <!-- Main Section -->
+    <div class="ml-64 min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="flex justify-between items-center px-8 py-4 bg-[#FFFDF8]">
+            <h1 class="text-xl font-semibold text-[#6B3E26]">Coupons</h1>
+            <a href="{% url 'add_coupon' %}" class="bg-[#FF7F5C] text-white px-6 py-2 rounded-lg hover:bg-orange-600 transition">
+                Add New Coupon
+            </a>
+        </header>
+
+        {% if messages %}
+        <div class="px-8 mt-4">
+            {% for message in messages %}
+            <div class="p-4 mb-2 text-sm rounded-lg {% if message.tags == 'error' %}bg-red-50 text-red-800{% else %}bg-green-50 text-green-800{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <!-- Coupons Table -->
+        <main class="flex-1 px-8 mt-6">
+            <div class="bg-[#FBF9F4] rounded-xl shadow-sm overflow-hidden border border-[#E7E2D9]">
+                <table class="w-full text-sm">
+                    <thead class="bg-[#F7F4ED] text-left text-gray-600">
+                        <tr>
+                            <th class="py-3 px-6 border-b font-semibold">Code</th>
+                            <th class="py-3 px-6 border-b font-semibold">Discount</th>
+                            <th class="py-3 px-6 border-b font-semibold">Min Amount</th>
+                            <th class="py-3 px-6 border-b font-semibold">Valid From</th>
+                            <th class="py-3 px-6 border-b font-semibold">Valid Until</th>
+                            <th class="py-3 px-6 border-b font-semibold">Usage Limit</th>
+                            <th class="py-3 px-6 border-b font-semibold text-center">Status</th>
+                            <th class="py-3 px-6 border-b font-semibold text-center">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="text-gray-700">
+                        {% for coupon in coupons %}
+                        <tr class="border-b border-[#EDEAE3] hover:bg-[#F9F6F1] transition">
+                            <td class="py-3 px-6 font-medium text-gray-900">{{ coupon.code }}</td>
+                            <td class="py-3 px-6">
+                                {% if coupon.discount_type == 'Percentage' %}
+                                {{ coupon.discount_value }}% (Max: {{ coupon.max_discount|default:"None" }})
+                                {% else %}
+                                ₹{{ coupon.discount_value }} Flat
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-6">₹{{ coupon.min_order_amount }}</td>
+                            <td class="py-3 px-6">{{ coupon.valid_from|date:"d M Y, H:i" }}</td>
+                            <td class="py-3 px-6">{{ coupon.valid_to|date:"d M Y, H:i" }}</td>
+                            <td class="py-3 px-6">{{ coupon.usage_limit|default:"Unlimited" }} (Per user: {{ coupon.per_user_limit }})</td>
+                            <td class="py-3 px-6 text-center">
+                                {% if coupon.is_active %}
+                                <span class="bg-green-100 text-green-800 px-2 py-1 rounded text-xs font-medium">Active</span>
+                                {% else %}
+                                <span class="bg-red-100 text-red-800 px-2 py-1 rounded text-xs font-medium">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-6 text-center space-x-2">
+                                <a href="{% url 'edit_coupon' coupon.id %}" class="text-blue-600 hover:text-blue-800" title="Edit">
+                                    <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                                </a>
+                                <form action="{% url 'toggle_coupon_status' coupon.id %}" method="POST" class="inline">
+                                    {% csrf_token %}
+                                    <button type="submit" class="text-gray-500 hover:text-gray-700" title="Toggle Status">
+                                        {% if coupon.is_active %}
+                                        <svg class="w-5 h-5 inline text-red-500 hover:text-red-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"></path></svg>
+                                        {% else %}
+                                        <svg class="w-5 h-5 inline text-green-500 hover:text-green-700" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        {% endif %}
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center py-6 text-gray-500">No coupons available.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </main>
+    </div>
+</body>
+</html>

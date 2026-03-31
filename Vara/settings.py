@@ -199,3 +199,11 @@ SECURE_CROSS_ORIGIN_OPENER_POLICY = "same-origin-allow-popups"
 # Razorpay Configuration
 RAZORPAY_KEY_ID = config('RAZORPAY_KEY_ID')
 RAZORPAY_KEY_SECRET = config('RAZORPAY_KEY_SECRET')
+
+# -----------------------------------------------------------
+# Referral System Configuration
+# -----------------------------------------------------------
+REFERRAL_DISCOUNT_TYPE = 'Percentage'   # 'Percentage' or 'Fixed'
+REFERRAL_DISCOUNT_VALUE = 10            # 10% off for the referrer
+REFERRAL_COUPON_MIN_ORDER = 0           # No minimum order amount
+REFERRAL_COUPON_EXPIRY_DAYS = 365       # Coupon valid for 1 year

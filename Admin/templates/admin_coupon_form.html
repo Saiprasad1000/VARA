@@ -1,0 +1,179 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VARA - {{ action }} Coupon</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Include Select2 for multiple selection -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+</head>
+<body class="bg-[#FFFDF8] text-gray-800">
+    <!-- Sidebar -->
+    {% include 'sidebar.html' %}
+
+    <!-- Main Section -->
+    <div class="ml-64 min-h-screen flex flex-col pb-10">
+        <!-- Header -->
+        <header class="flex justify-between items-center px-8 py-4 bg-[#FFFDF8] border-b border-gray-200">
+            <h1 class="text-xl font-semibold text-[#6B3E26] flex items-center gap-2">
+                <a href="{% url 'coupons' %}" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+                </a>
+                {{ action }} Coupon
+            </h1>
+        </header>
+
+        {% if messages %}
+        <div class="px-8 mt-4">
+            {% for message in messages %}
+            <div class="p-4 mb-2 text-sm rounded-lg {% if message.tags == 'error' %}bg-red-50 text-red-800{% else %}bg-green-50 text-green-800{% endif %}">
+                {{ message }}
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <main class="flex-1 px-8 mt-6 max-w-4xl mx-auto w-full">
+            <div class="bg-white rounded-xl shadow-sm border border-[#E7E2D9] p-8">
+                <form method="POST" action="">
+                    {% csrf_token %}
+                    
+                    <h2 class="text-lg font-bold text-gray-800 border-b pb-2 mb-6">Basic Information</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Coupon Code *</label>
+                            <input type="text" name="code" value="{{ coupon.code|default:'' }}" required
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none uppercase" placeholder="e.g. SUMMER50">
+                            <p class="text-xs text-gray-500 mt-1">Codes are case-sensitive.</p>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Discount Type *</label>
+                            <select name="discount_type" id="discount_type" required class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none">
+                                <option value="Percentage" {% if coupon.discount_type == 'Percentage' %}selected{% endif %}>Percentage (%)</option>
+                                <option value="Fixed" {% if coupon.discount_type == 'Fixed' %}selected{% endif %}>Fixed Amount (₹)</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Discount Value *</label>
+                            <input type="number" step="0.01" min="0" name="discount_value" value="{{ coupon.discount_value|default:'' }}" required
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none">
+                        </div>
+                        
+                        <div id="max_discount_container">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Maximum Discount</label>
+                            <input type="number" step="0.01" min="0" name="max_discount" value="{{ coupon.max_discount|default:'' }}"
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none" placeholder="Optional">
+                        </div>
+
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Min Order Amount *</label>
+                            <input type="number" step="0.01" min="0" name="min_order_amount" value="{{ coupon.min_order_amount|default:'0' }}" required
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none">
+                        </div>
+                    </div>
+
+                    <h2 class="text-lg font-bold text-gray-800 border-b pb-2 mb-6">Validity & Limits</h2>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Valid From *</label>
+                            <input type="datetime-local" name="valid_from" value="{{ coupon.valid_from|date:'Y-m-d\TH:i' }}" required
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none">
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Valid To *</label>
+                            <input type="datetime-local" name="valid_to" value="{{ coupon.valid_to|date:'Y-m-d\TH:i' }}" required
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Total Usage Limit</label>
+                            <input type="number" min="0" name="usage_limit" value="{{ coupon.usage_limit|default:'0' }}"
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none">
+                            <p class="text-xs text-gray-500 mt-1">Total times this coupon can be used across all users (0 = unlimited).</p>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Per-User Limit</label>
+                            <input type="number" min="1" name="per_user_limit" value="{{ coupon.per_user_limit|default:'1' }}" required
+                                class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 outline-none">
+                            <p class="text-xs text-gray-500 mt-1">Times a single user can use this code.</p>
+                        </div>
+                    </div>
+
+                    <h2 class="text-lg font-bold text-gray-800 border-b pb-2 mb-6">Scoping (Optional)</h2>
+                    <p class="text-sm text-gray-500 mb-4">Leave empty to apply to the entire cart (Global coupon). If scopes are selected, the discount applies ONLY to eligible items in the cart.</p>
+
+                    <div class="space-y-6 mb-8">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Eligible Categories</label>
+                            <select name="categories" multiple class="select2 w-full">
+                                {% for cat in categories %}
+                                <option value="{{ cat.id }}" {% if cat.id in selected_categories %}selected{% endif %}>{{ cat.name }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Eligible Products</label>
+                            <select name="products" multiple class="select2 w-full">
+                                {% for prod in products %}
+                                <option value="{{ prod.id }}" {% if prod.id in selected_products %}selected{% endif %}>{{ prod.title }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Eligible Variants</label>
+                            <select name="variants" multiple class="select2 w-full">
+                                {% for v in variants %}
+                                <option value="{{ v.id }}" {% if v.id in selected_variants %}selected{% endif %}>{{ v.variant_type }} ({{ v.product.title }})</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-4 border-t pt-6">
+                        <a href="{% url 'coupons' %}" class="px-6 py-2 border rounded-lg text-gray-700 hover:bg-gray-50 font-medium">Cancel</a>
+                        <button type="submit" class="bg-[#FF7F5C] text-white px-8 py-2 rounded-lg hover:bg-orange-600 font-medium transition">
+                            Save Coupon
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        $(document).ready(function() {
+            $('.select2').select2({
+                placeholder: "Select options...",
+                allowClear: true
+            });
+
+            // Toggle Max Discount field visibility based on Type
+            function updateMaxDiscount() {
+                if ($('#discount_type').val() === 'Fixed') {
+                    $('#max_discount_container').hide();
+                    $('input[name="max_discount"]').val(''); // clear out
+                } else {
+                    $('#max_discount_container').show();
+                }
+            }
+
+            $('#discount_type').change(updateMaxDiscount);
+            updateMaxDiscount(); // on load
+        });
+    </script>
+</body>
+</html>
