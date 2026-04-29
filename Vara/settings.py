@@ -26,7 +26,7 @@ SECRET_KEY = config("SECRET_KEY")
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = False
 
-ALLOWED_HOSTS = ["varaartstore.in","www.varaartstore.in","3.110.225.153" ]
+ALLOWED_HOSTS = [*]
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 
 CSRF_COOKIE_SECURE = True
