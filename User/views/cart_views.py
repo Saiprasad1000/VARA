@@ -38,6 +38,12 @@ def add_to_cart(request):
         
         # Check stock availability
         available_stock = variant.stock if variant else product.available_quantity
+        if available_stock <= 0:
+            return JsonResponse({
+                'success': False,
+                'message': 'Product is currently out of stock'
+            })
+        
         if quantity > available_stock:
             return JsonResponse({
                 'success': False,
@@ -108,6 +114,8 @@ def view_cart(request):
         'cart': cart,
         'cart_items': cart_items,
         'total': cart.get_total(),
+        'original_total': cart.get_original_total(),
+        'total_discount': cart.get_total_discount(),
         'MEDIA_URL': settings.MEDIA_URL
     }
     return render(request, 'cart.html', context)
@@ -123,6 +131,12 @@ def update_cart(request):
         
         # Check stock
         available_stock = cart_item.varient.stock if cart_item.varient else cart_item.product.available_quantity
+        if available_stock <= 0 and quantity > 0:
+            return JsonResponse({
+                'success': False,
+                'message': 'Product is currently out of stock'
+            })
+            
         if quantity > available_stock:
             return JsonResponse({
                 'success': False,
@@ -142,7 +156,11 @@ def update_cart(request):
             'success': True,
             'message': message,
             'subtotal': float(cart_item.get_subtotal()) if quantity > 0 else 0,
+            'original_subtotal': float(cart_item.get_original_subtotal()) if quantity > 0 else 0,
+            'item_discount': float(cart_item.get_discount_amount()) if quantity > 0 else 0,
             'cart_total': float(cart.get_total()),
+            'cart_original_total': float(cart.get_original_total()),
+            'cart_total_discount': float(cart.get_total_discount()),
             'cart_count': cart.get_item_count()
         })
     
@@ -161,6 +179,8 @@ def remove_from_cart(request):
             'success': True,
             'message': 'Item removed from cart',
             'cart_total': float(cart.get_total()),
+            'cart_original_total': float(cart.get_original_total()),
+            'cart_total_discount': float(cart.get_total_discount()),
             'cart_count': cart.get_item_count()
         })
     

@@ -131,6 +131,12 @@ class Cart(models.Model):
     def get_total(self):
         return sum(item.get_subtotal() for item in self.items.all())
     
+    def get_original_total(self):
+        return sum(item.get_original_subtotal() for item in self.items.all())
+
+    def get_total_discount(self):
+        return sum(item.get_discount_amount() for item in self.items.all())
+    
     def get_item_count(self):
         return sum(item.quantity for item in self.items.all())
 
@@ -151,16 +157,27 @@ class CartItems(models.Model):
     def __str__(self):
         return f"{self.quantity} x {self.product.title}"
 
-    def get_subtotal(self):
-        if self.varient:
-            return self.varient.price * self.quantity
-        else:
-            return self.product.price * self.quantity
-    def get_price(self):
+    def get_offer_data(self):
+        from Admin.services.offer_service import get_best_offer
+        return get_best_offer(self.product, self.varient)
+
+    def get_original_price(self):
         if self.varient:
             return self.varient.price
         else:
-            return self.product.price   
+            return self.product.price
+
+    def get_original_subtotal(self):
+        return self.get_original_price() * self.quantity
+
+    def get_price(self):
+        return self.get_offer_data()['final_price']
+
+    def get_subtotal(self):
+        return self.get_price() * self.quantity
+
+    def get_discount_amount(self):
+        return self.get_offer_data()['discount_amount'] * self.quantity
 
 class Wishlist(models.Model):
     user = models.OneToOneField(CustomUser, on_delete=models.CASCADE, related_name='wishlist', null=True, blank=True)
@@ -279,7 +296,7 @@ class Order(models.Model):
     
     coupon = models.ForeignKey(Coupon, on_delete=models.SET_NULL, null=True, blank=True, related_name='orders')
     discount_amount = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
-    
+    delivery_charge = models.DecimalField(max_digits=10, decimal_places=2, default=0.00)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     
@@ -418,4 +435,4 @@ class Referral(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
-        return f"{self.referrer.email} referred {self.referred_user.email}"
+        return f"{self.referrer.email} referred {self.referred_user.email}"

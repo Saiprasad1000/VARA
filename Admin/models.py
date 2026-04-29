@@ -42,6 +42,31 @@ class Variant(models.Model):
     def __str__(self):
         return f"{self.variant_type} - {self.product.title if self.product else 'No Product'}"
 
+    @property
+    def best_offer(self):
+        from Admin.services.offer_service import get_best_offer
+        if not self.product:
+            return None
+        return get_best_offer(product=self.product, variant=self)['best_offer']
+
+    @property
+    def discounted_price(self):
+        from Admin.services.offer_service import get_best_offer
+        if not self.product:
+            return self.price
+        return get_best_offer(product=self.product, variant=self)['final_price']
+
+    @property
+    def discount_percent(self):
+        offer = self.best_offer
+        if offer:
+            if offer.offer_type == 'Percentage':
+                return int(offer.value)
+            else:
+                return int((offer.value / self.price) * 100) if self.price > 0 else 0
+        return 0
+
+
 
 
 class Product(models.Model):
@@ -77,12 +102,43 @@ class Product(models.Model):
     def __str__(self):
         return f"{self.title} ({self.category.name})"
 
+    @property
+    def best_offer(self):
+        from Admin.services.offer_service import get_best_offer
+        return get_best_offer(product=self)['best_offer']
+
+    @property
+    def discounted_price(self):
+        from Admin.services.offer_service import get_best_offer
+        return get_best_offer(product=self)['final_price']
+
+    @property
+    def discount_percent(self):
+        offer = self.best_offer
+        if offer:
+            if offer.offer_type == 'Percentage':
+                return int(offer.value)
+            else:
+                return int((offer.value / self.price) * 100) if self.price > 0 else 0
+        return 0
 
 class Offer(models.Model):
-    product_name = models.CharField(max_length=255)
-    category_name = models.CharField(max_length=255)
-    discount = models.IntegerField()
-    is_listed = models.BooleanField(default=True)
+    OFFER_TYPES = (
+        ('Percentage', 'Percentage'),
+        ('Flat', 'Flat'),
+    )
+
+    name = models.CharField(max_length=255, default='General Offer')
+    offer_type = models.CharField(max_length=20, choices=OFFER_TYPES, default='Percentage')
+    value = models.DecimalField(max_digits=10, decimal_places=2, default=0.0)
+    start_date = models.DateTimeField(default=timezone.now)
+    end_date = models.DateTimeField(default=timezone.now)
+    is_active = models.BooleanField(default=True)
+
+    products = models.ManyToManyField('Product', blank=True, related_name='offers')
+    categories = models.ManyToManyField('Category', blank=True, related_name='offers')
+    variants = models.ManyToManyField('Variant', blank=True, related_name='offers')
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
@@ -90,8 +146,4 @@ class Offer(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f"{self.product_name} - {self.discount}%"
-
-
-
-
+        return f"{self.name} - {self.value} {self.offer_type}"

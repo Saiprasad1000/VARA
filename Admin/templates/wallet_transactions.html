@@ -1,0 +1,470 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VARA - Wallet Transactions</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Sticky table header */
+        .table-scroll-wrapper {
+            max-height: 65vh;
+            overflow-y: auto;
+        }
+        .table-scroll-wrapper thead th {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background-color: #F7F4ED;
+        }
+        /* Tooltip */
+        .txn-id-cell {
+            position: relative;
+        }
+        .txn-tooltip {
+            display: none;
+            position: absolute;
+            bottom: calc(100% + 6px);
+            left: 0;
+            background: #333;
+            color: #fff;
+            font-size: 0.72rem;
+            padding: 4px 8px;
+            border-radius: 5px;
+            white-space: nowrap;
+            z-index: 20;
+            pointer-events: none;
+        }
+        .txn-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 12px;
+            border: 5px solid transparent;
+            border-top-color: #333;
+        }
+        .txn-id-cell:hover .txn-tooltip {
+            display: block;
+        }
+        /* Copy icon button */
+        .copy-btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0 4px;
+            color: #9CA3AF;
+            transition: color 0.15s;
+            vertical-align: middle;
+        }
+        .copy-btn:hover {
+            color: #6B3E26;
+        }
+        /* Copy toast */
+        #copy-toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #6B3E26;
+            color: #fff;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            opacity: 0;
+            transition: opacity 0.3s;
+            z-index: 1000;
+        }
+        #copy-toast.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+
+<body class="bg-[#FFFDF8] text-gray-800">
+    <!-- Sidebar -->
+    {% include 'sidebar.html' %}
+
+    <!-- Main Section -->
+    <div class="ml-64 min-h-screen flex flex-col">
+        <!-- Header -->
+        <header class="flex justify-between items-center px-8 py-4 bg-[#FFFDF8]">
+            <h1 class="text-2xl font-semibold text-[#6B3E26]">Wallet Transactions</h1>
+        </header>
+
+        <!-- Main Content -->
+        <main class="flex-1 px-8 mt-6">
+
+            <!-- Filters & Sort -->
+            <div class="bg-[#FBF9F4] rounded-xl shadow-sm p-4 mb-6 border border-[#E7E2D9]">
+                <form method="GET" class="flex flex-wrap items-center gap-4">
+
+                    <!-- Type Filter -->
+                    <div class="w-52">
+                        <select name="type"
+                            id="type-filter"
+                            class="w-full px-4 py-2 bg-[#F7F4ED] border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7F5C] cursor-pointer"
+                            onchange="this.form.submit()">
+                            <option value="">All Types</option>
+                            <option value="Credit" {% if type_filter == 'Credit' %}selected{% endif %}>Credit Only</option>
+                            <option value="Debit"  {% if type_filter == 'Debit' %}selected{% endif %}>Debit Only</option>
+                        </select>
+                    </div>
+
+                    <!-- Sort -->
+                    <div class="w-52">
+                        <select name="sort"
+                            id="sort-select"
+                            class="w-full px-4 py-2 bg-[#F7F4ED] border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7F5C] cursor-pointer"
+                            onchange="this.form.submit()">
+                            <option value="newest" {% if sort_by == 'newest' %}selected{% endif %}>Date: Newest First</option>
+                            <option value="oldest" {% if sort_by == 'oldest' %}selected{% endif %}>Date: Oldest First</option>
+                        </select>
+                    </div>
+
+                    <!-- Clear -->
+                    <a href="{% url 'wallet_transactions' %}"
+                        class="px-4 py-2 text-sm text-gray-600 hover:text-[#FF7F5C] hover:bg-gray-100 rounded-lg transition-colors">
+                        Clear
+                    </a>
+                </form>
+            </div>
+
+            <!-- Transactions Table -->
+            <div class="bg-[#FBF9F4] rounded-xl shadow-sm overflow-hidden border border-[#E7E2D9]">
+                <div class="table-scroll-wrapper overflow-x-auto">
+                    <table class="min-w-full">
+                        <thead class="bg-[#F7F4ED]">
+                            <tr>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Transaction ID</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Date</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    User</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Type</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Amount</th>
+                                <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                    Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-[#EDEAE3]">
+                            {% for txn in transactions %}
+                            {% with full_id="TXN-"|add:txn.id|stringformat:"s" %}
+                            <tr class="hover:bg-[#F9F6F1] transition-colors">
+
+                                <!-- Transaction ID with tooltip + copy -->
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                                    <div class="txn-id-cell inline-flex items-center gap-1">
+                                        <span class="font-mono tracking-tight">
+                                            TXN-{{ txn.id|stringformat:"05d" }}
+                                        </span>
+                                        <span class="txn-tooltip">{{ full_id }}</span>
+                                        <button
+                                            type="button"
+                                            class="copy-btn"
+                                            title="Copy Transaction ID"
+                                            onclick="copyTxnId('{{ full_id }}')"
+                                            aria-label="Copy transaction ID {{ full_id }}">
+                                            <!-- Clipboard icon -->
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M8 5H6a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2v-1M8 5a2 2 0 002 2h2a2 2 0 002-2M8 5a2 2 0 012-2h2a2 2 0 012 2m0 0h2a2 2 0 012 2v3" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                </td>
+
+                                <!-- Date -->
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    {{ txn.created_at|date:"M d, Y" }}
+                                    <div class="text-xs text-gray-400">{{ txn.created_at|date:"h:i A" }}</div>
+                                </td>
+
+                                <!-- User -->
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">
+                                    <div class="flex flex-col">
+                                        <span class="font-medium text-gray-900">
+                                            {{ txn.wallet.user.first_name }} {{ txn.wallet.user.last_name }}
+                                        </span>
+                                        <span class="text-xs text-gray-500">{{ txn.wallet.user.email }}</span>
+                                    </div>
+                                </td>
+
+                                <!-- Type badge -->
+                                <td class="px-6 py-4 whitespace-nowrap">
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+                                        {% if txn.transaction_type == 'Credit' %}
+                                            bg-green-100 text-green-800
+                                        {% else %}
+                                            bg-red-100 text-red-800
+                                        {% endif %}">
+                                        {{ txn.transaction_type }}
+                                    </span>
+                                </td>
+
+                                <!-- Amount (bold) -->
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span class="font-bold text-gray-900">₹{{ txn.amount }}</span>
+                                </td>
+
+                                <!-- Actions -->
+                                <td class="px-6 py-4 whitespace-nowrap text-center">
+                                    <button
+                                        type="button"
+                                        class="view-txn-btn bg-[#8CC63F] text-white px-3 py-1.5 rounded-md hover:bg-[#7bb236] transition duration-150 ease-in-out text-sm font-medium"
+                                        data-id="TXN-{{ txn.id|stringformat:'05d' }}"
+                                        data-full-id="TXN-{{ txn.id }}"
+                                        data-user-name="{{ txn.wallet.user.first_name }} {{ txn.wallet.user.last_name }}"
+                                        data-user-email="{{ txn.wallet.user.email }}"
+                                        data-user-id="{{ txn.wallet.user.id }}"
+                                        data-date="{{ txn.created_at|date:'M d, Y' }} at {{ txn.created_at|date:'h:i A' }}"
+                                        data-type="{{ txn.transaction_type }}"
+                                        data-amount="{{ txn.amount }}"
+                                        data-description="{{ txn.description }}"
+                                        data-order-id="{% if txn.order %}{{ txn.order.id }}{% endif %}"
+                                    >
+                                        View
+                                    </button>
+                                </td>
+
+                            </tr>
+                            {% endwith %}
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="px-6 py-10 text-center text-gray-500">
+                                    No wallet transactions found.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Pagination -->
+            {% if transactions.has_other_pages %}
+            <div class="flex justify-center items-center mt-8 space-x-2 pb-8">
+                {% if transactions.has_previous %}
+                <a href="?page={{ transactions.previous_page_number }}&type={{ type_filter }}&sort={{ sort_by }}"
+                    class="px-3 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">Prev</a>
+                {% endif %}
+
+                {% for num in transactions.paginator.page_range %}
+                    {% if transactions.number == num %}
+                    <span class="px-3 py-1 rounded bg-[#8CC63F] text-white">{{ num }}</span>
+                    {% elif num > transactions.number|add:'-3' and num < transactions.number|add:'3' %}
+                    <a href="?page={{ num }}&type={{ type_filter }}&sort={{ sort_by }}"
+                        class="px-3 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">{{ num }}</a>
+                    {% endif %}
+                {% endfor %}
+
+                {% if transactions.has_next %}
+                <a href="?page={{ transactions.next_page_number }}&type={{ type_filter }}&sort={{ sort_by }}"
+                    class="px-3 py-1 rounded border border-gray-300 bg-white text-gray-700 hover:bg-gray-50">Next</a>
+                {% endif %}
+            </div>
+            {% endif %}
+
+        </main>
+    </div>
+
+    <!-- Copy toast notification -->
+    <div id="copy-toast">Copied!</div>
+
+    <!-- =========================================================
+         Transaction Detail Modal
+         Pattern: hidden fixed inset-0  (same as add_product.html cropModal)
+    ========================================================== -->
+    <div id="txnDetailModal" class="hidden fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-xl max-w-lg w-full max-h-[90vh] overflow-y-auto">
+
+            <!-- Modal Header -->
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-[#FBF9F4] rounded-t-xl">
+                <div class="flex items-center gap-3">
+                    <h2 class="text-lg font-semibold text-[#6B3E26]" id="modal-txn-id">Transaction Detail</h2>
+                    <span id="modal-type-badge" class="px-3 py-1 text-xs leading-5 font-semibold rounded-full"></span>
+                </div>
+                <button type="button" onclick="closeTxnModal()"
+                    class="text-gray-400 hover:text-gray-600 transition" aria-label="Close modal">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="px-6 py-5 space-y-5">
+
+                <!-- Section 1: User Details -->
+                <div class="bg-[#F7F4ED] rounded-lg p-4">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">User Details</h3>
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Name</span>
+                            <span class="font-medium text-gray-800" id="modal-user-name">—</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Email</span>
+                            <span class="font-medium text-gray-800 break-all" id="modal-user-email">—</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">User ID</span>
+                            <span class="text-gray-600" id="modal-user-id">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 2: Transaction Info -->
+                <div class="bg-[#F7F4ED] rounded-lg p-4">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Transaction Info</h3>
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Transaction ID</span>
+                            <span class="font-mono text-gray-700" id="modal-txn-id-body">—</span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Date</span>
+                            <span class="text-gray-700" id="modal-date">—</span>
+                        </div>
+                        <div class="flex justify-between items-center text-sm">
+                            <span class="text-gray-500">Type</span>
+                            <span id="modal-type-body" class="px-3 py-0.5 text-xs font-semibold rounded-full"></span>
+                        </div>
+                        <div class="flex justify-between text-sm">
+                            <span class="text-gray-500">Amount</span>
+                            <span class="font-bold text-gray-900 text-base" id="modal-amount">—</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Section 3: Source of Transaction -->
+                <div class="bg-[#F7F4ED] rounded-lg p-4">
+                    <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">Source of Transaction</h3>
+                    <p class="text-sm text-gray-800" id="modal-description">—</p>
+                </div>
+
+                <!-- Section 4: Order Navigation (conditional) -->
+                <div id="modal-order-section" class="hidden">
+                    <div class="bg-[#FFF8F0] border border-[#FFD9B3] rounded-lg p-4">
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Linked Order</h3>
+                        <a id="modal-order-link" href="#"
+                            class="inline-flex items-center gap-2 bg-[#8CC63F] text-white px-4 py-2 rounded-md hover:bg-[#7bb236] transition text-sm font-medium">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                            View Order
+                        </a>
+                    </div>
+                </div>
+
+            </div><!-- /Modal Body -->
+
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 border-t border-gray-200 flex justify-end">
+                <button type="button" onclick="closeTxnModal()"
+                    class="px-5 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition text-sm font-medium">
+                    Close
+                </button>
+            </div>
+
+        </div>
+    </div>
+    <!-- /Transaction Detail Modal -->
+
+    <script>
+        /* ---- Copy-to-clipboard ---- */
+        function copyTxnId(id) {
+            if (navigator.clipboard && window.isSecureContext) {
+                navigator.clipboard.writeText(id).then(showToast);
+            } else {
+                var el = document.createElement('textarea');
+                el.value = id;
+                el.style.position = 'fixed';
+                el.style.opacity = '0';
+                document.body.appendChild(el);
+                el.select();
+                document.execCommand('copy');
+                document.body.removeChild(el);
+                showToast();
+            }
+        }
+
+        function showToast() {
+            var toast = document.getElementById('copy-toast');
+            toast.classList.add('show');
+            setTimeout(function () { toast.classList.remove('show'); }, 1800);
+        }
+
+        /* ---- Transaction Detail Modal ---- */
+        function openTxnModal(btn) {
+            var d = btn.dataset;
+
+            // Header
+            document.getElementById('modal-txn-id').textContent = d.id;
+
+            // Type badge (header)
+            var headerBadge = document.getElementById('modal-type-badge');
+            headerBadge.textContent = d.type;
+            headerBadge.className = 'px-3 py-1 text-xs leading-5 font-semibold rounded-full ' +
+                (d.type === 'Credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800');
+
+            // User Details
+            document.getElementById('modal-user-name').textContent  = d.userName  || '—';
+            document.getElementById('modal-user-email').textContent = d.userEmail || '—';
+            document.getElementById('modal-user-id').textContent    = '#' + (d.userId || '—');
+
+            // Transaction Info
+            document.getElementById('modal-txn-id-body').textContent = d.fullId;
+            document.getElementById('modal-date').textContent         = d.date;
+            document.getElementById('modal-amount').textContent       = '₹' + d.amount;
+
+            var bodyBadge = document.getElementById('modal-type-body');
+            bodyBadge.textContent  = d.type;
+            bodyBadge.className = 'px-3 py-0.5 text-xs font-semibold rounded-full ' +
+                (d.type === 'Credit' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800');
+
+            // Source of Transaction
+            document.getElementById('modal-description').textContent = d.description || '—';
+
+            // Linked Order (conditional)
+            var orderSection = document.getElementById('modal-order-section');
+            var orderLink    = document.getElementById('modal-order-link');
+            if (d.orderId) {
+                orderLink.href = '/admin/orders/' + d.orderId + '/';
+                orderLink.textContent = '';
+                // Rebuild link content with icon
+                orderLink.innerHTML =
+                    '<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">' +
+                    '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"' +
+                    ' d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>' +
+                    '</svg> View Order #' + d.orderId;
+                orderSection.classList.remove('hidden');
+            } else {
+                orderSection.classList.add('hidden');
+            }
+
+            // Open modal
+            document.getElementById('txnDetailModal').classList.remove('hidden');
+        }
+
+        function closeTxnModal() {
+            document.getElementById('txnDetailModal').classList.add('hidden');
+        }
+
+        // Close modal on backdrop click
+        document.getElementById('txnDetailModal').addEventListener('click', function(e) {
+            if (e.target === this) closeTxnModal();
+        });
+
+        // Wire up all View buttons
+        document.querySelectorAll('.view-txn-btn').forEach(function(btn) {
+            btn.addEventListener('click', function() { openTxnModal(this); });
+        });
+    </script>
+</body>
+
+</html>

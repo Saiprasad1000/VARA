@@ -78,7 +78,18 @@ def order_detail(request, order_id):
                                 from User.models import Wallet
                                 wallet, _ = Wallet.objects.get_or_create(user=order.user)
                                 action_str = "cancellation" if item_status == 'Cancelled' else "return"
-                                wallet.credit(order_item.get_subtotal(), f"Refund for Order #{order.id} item {action_str} (Admin)", order=order)
+                                
+                                # PROPORTIONAL REFUND LOGIC
+                                items_subtotal = float(sum(i.get_subtotal() for i in order.items.all()))
+                                actual_paid_for_items = float(order.total_amount - getattr(order, 'delivery_charge', 0))
+                                
+                                if items_subtotal > 0:
+                                    refund_ratio = actual_paid_for_items / items_subtotal
+                                    item_refund = float(order_item.get_subtotal()) * refund_ratio
+                                else:
+                                    item_refund = actual_paid_for_items
+
+                                wallet.credit(item_refund, f"Refund for Order #{order.id} item {action_str} (Admin)", order=order)
                             
                             if order_item.variant:
                                 order_item.variant.stock += order_item.quantity
@@ -113,7 +124,15 @@ def order_detail(request, order_id):
                                 item.product.available_quantity += item.quantity
                                 item.product.save()
                             if (order.payment_method == 'Razorpay' or order.payment_method == 'Wallet') and order.payment_status == 'Paid':
-                                refund_amount += float(item.get_subtotal())
+                                # Prorate refund for this item
+                                items_subtotal = float(sum(i.get_subtotal() for i in order.items.all()))
+                                actual_paid_for_items = float(order.total_amount - getattr(order, 'delivery_charge', 0))
+                                
+                                if items_subtotal > 0:
+                                    refund_ratio = actual_paid_for_items / items_subtotal
+                                    refund_amount += float(item.get_subtotal()) * refund_ratio
+                                else:
+                                    refund_amount += float(item.get_subtotal())
                         
                         item.status = new_status
                         item.save()

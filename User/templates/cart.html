@@ -82,10 +82,20 @@
 
                     <!-- Price -->
                     <div class="text-right">
-                        <p class="text-lg font-semibold text-gray-900">₹{{ item.get_price }}</p>
+                        {% if item.get_discount_amount > 0 %}
+                            <p class="text-sm text-gray-500 line-through">₹{{ item.get_original_price }}</p>
+                            <p class="text-lg font-semibold text-green-600">₹{{ item.get_price }}</p>
+                            <p class="text-xs text-orange-500 font-bold mb-2 break-normal">Offer Applied!</p>
+                        {% else %}
+                            <p class="text-lg font-semibold text-gray-900">₹{{ item.get_price }}</p>
+                        {% endif %}
                         <p class="text-sm text-gray-500 mt-1">Subtotal:</p>
-                        <p class="text-xl font-bold text-green-600" id="subtotal-{{ item.id }}">
-                            ₹{{item.get_subtotal}}</p>
+                        <div id="subtotal-container-{{ item.id }}">
+                            {% if item.get_discount_amount > 0 %}
+                                <p class="text-sm text-gray-500 line-through" id="orig-subtotal-{{ item.id }}">₹{{ item.get_original_subtotal }}</p>
+                            {% endif %}
+                            <p class="text-xl font-bold text-green-600" id="subtotal-{{ item.id }}">₹{{item.get_subtotal}}</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -100,14 +110,18 @@
                 <div class="space-y-3 mb-6">
                     <div class="flex justify-between text-gray-600">
                         <span>Subtotal</span>
-                        <span id="cart-total">₹{{ total }}</span>
+                        <span id="cart-original-total">₹{{ original_total }}</span>
+                    </div>
+                    <div class="flex justify-between text-green-600 font-medium" id="cart-discount-container" {% if total_discount <= 0 %}style="display: none;"{% endif %}>
+                        <span>Offer Discount</span>
+                        <span id="cart-total-discount">-₹{{ total_discount }}</span>
                     </div>
                     <div class="flex justify-between text-gray-600">
                         <span>Shipping</span>
                         <span>Free</span>
                     </div>
                     <div class="border-t pt-3 flex justify-between text-xl font-bold text-gray-900">
-                        <span>Total</span>
+                        <span>Total Price</span>
                         <span id="final-total">₹{{ total }}</span>
                     </div>
                 </div>
@@ -175,8 +189,24 @@
                         document.getElementById(`cart-item-${itemId}`).remove();
                     } else {
                         document.getElementById(`subtotal-${itemId}`).textContent = '₹' + data.subtotal;
+                        const origSubEl = document.getElementById(`orig-subtotal-${itemId}`);
+                        if (origSubEl && data.original_subtotal) {
+                            origSubEl.textContent = '₹' + data.original_subtotal;
+                        }
                     }
-                    document.getElementById('cart-total').textContent = '₹' + data.cart_total;
+                    
+                    const origTotalEl = document.getElementById('cart-original-total');
+                    if (origTotalEl) origTotalEl.textContent = '₹' + data.cart_original_total;
+                    
+                    const discountContainer = document.getElementById('cart-discount-container');
+                    const discountEl = document.getElementById('cart-total-discount');
+                    if (data.cart_total_discount > 0) {
+                        if (discountContainer) discountContainer.style.display = 'flex';
+                        if (discountEl) discountEl.textContent = '-₹' + data.cart_total_discount;
+                    } else {
+                        if (discountContainer) discountContainer.style.display = 'none';
+                    }
+
                     document.getElementById('final-total').textContent = '₹' + data.cart_total;
                     updateCartCount(data.cart_count);
 
@@ -204,7 +234,18 @@
                 .then(data => {
                     if (data.success) {
                         document.getElementById(`cart-item-${itemId}`).remove();
-                        document.getElementById('cart-total').textContent = '₹' + data.cart_total;
+                        const origTotalEl = document.getElementById('cart-original-total');
+                        if (origTotalEl) origTotalEl.textContent = '₹' + data.cart_original_total;
+                        
+                        const discountContainer = document.getElementById('cart-discount-container');
+                        const discountEl = document.getElementById('cart-total-discount');
+                        if (data.cart_total_discount > 0) {
+                            if (discountContainer) discountContainer.style.display = 'flex';
+                            if (discountEl) discountEl.textContent = '-₹' + data.cart_total_discount;
+                        } else {
+                            if (discountContainer) discountContainer.style.display = 'none';
+                        }
+                        
                         document.getElementById('final-total').textContent = '₹' + data.cart_total;
                         updateCartCount(data.cart_count);
 

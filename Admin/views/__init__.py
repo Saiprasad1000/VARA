@@ -4,3 +4,6 @@ from .category_views import *
 from .product_views import *
 from .offers_views import *
 from .orders_views import *
+from .wallet_views import *
+from .dashboard_views import *
+from .sales_report_views import *

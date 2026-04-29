@@ -10,7 +10,7 @@ from .views.checkout_views import checkout, add_address, place_order, order_succ
 from .views.order_views import my_orders
 from .views.address_views import manage_addresses, add_address as add_address_profile, get_address, edit_address, delete_address
 from .views.profile_views import edit_profile, verify_email_change
-from .views.order_action_views import order_detail, cancel_order, cancel_order_item, return_order_item
+from .views.order_action_views import order_detail, cancel_order, cancel_order_item, return_order_item, download_user_invoice
 from .views.wallet_views import wallet_view, add_money as wallet_add_money, verify_wallet_payment
 
 urlpatterns = [
@@ -86,4 +86,5 @@ urlpatterns = [
     path('order/cancel/<int:order_id>/', cancel_order, name='cancel_order'),
     path('order/item/cancel/<int:item_id>/', cancel_order_item, name='cancel_order_item'),
     path('order/item/return/<int:item_id>/', return_order_item, name='return_order_item'),
+    path('order/<int:order_id>/invoice/', download_user_invoice, name='user_order_invoice'),
     ]

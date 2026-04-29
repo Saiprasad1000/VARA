@@ -67,7 +67,7 @@
                 <h2 class="text-xl font-bold text-gray-900 mb-4">Payment Method</h2>
                 <div class="space-y-3">
                     <label
-                        class="flex items-center gap-3 border rounded-lg p-4 cursor-pointer transition-colors payment-option border-orange-500 bg-orange-50"
+                        class="flex items-center gap-3 border rounded-lg p-4 transition-colors payment-option border-orange-500 bg-orange-50"
                         id="payment-label-COD">
                         <input type="radio" name="payment_method" value="COD" checked
                             class="text-orange-500 focus:ring-orange-500"
@@ -75,6 +75,7 @@
                         <div>
                             <span class="font-semibold text-gray-900">Cash on Delivery (COD)</span>
                             <p class="text-sm text-gray-500">Pay when your order is delivered</p>
+                            <p id="cod-msg" class="text-xs font-semibold text-red-500 mt-0.5 hidden">Unavailable for orders > ₹{{ cod_limit }}</p>
                         </div>
                     </label>
                     <label
@@ -182,13 +183,25 @@
                 
                 <div class="border-t pt-4 space-y-2 text-sm">
                     <div class="flex justify-between text-gray-600">
+                        <span>Order Total</span>
+                        <span>₹{{ original_subtotal }}</span>
+                    </div>
+                    
+                    {% if offers_discount > 0 %}
+                    <div class="flex justify-between text-green-600 font-medium">
+                        <span>Offer Discount</span>
+                        <span>-₹{{ offers_discount }}</span>
+                    </div>
+                    {% endif %}
+                    
+                    <div class="flex justify-between text-gray-600 border-t pt-2 mt-2">
                         <span>Subtotal</span>
                         <span id="summary_subtotal">₹{{ subtotal }}</span>
                     </div>
                     
                     <div class="flex justify-between text-gray-600">
                         <span>Shipping</span>
-                        <span class="text-green-600">Free</span>
+                        <span id="summary_shipping" class="text-green-600">Free</span>
                     </div>
                     
                     <div id="discount_row" class="flex justify-between text-green-600 font-medium {% if discount_amount == 0 %}hidden{% endif %}">
@@ -290,18 +303,75 @@
         applyCoupon();
     }
 
+    let currentTotal = parseFloat('{{ total }}');
+    const codLimit = parseFloat('{{ cod_limit|default:1000 }}');
+    const codFee = parseFloat('{{ cod_fee|default:50 }}');
+    
+    function checkCODEligibility() {
+        const codRadio = document.querySelector('input[value="COD"]');
+        const codLabel = document.getElementById('payment-label-COD');
+        const codMsg = document.getElementById('cod-msg');
+        
+        // If order value without COD fee is above limit, disable COD
+        if (currentTotal > codLimit) {
+            codRadio.disabled = true;
+            codLabel.classList.add('opacity-50', 'cursor-not-allowed');
+            codLabel.classList.remove('cursor-pointer');
+            codMsg.classList.remove('hidden');
+            
+            // If COD was selected, switch to Razorpay
+            if (codRadio.checked) {
+                const razorpayRadio = document.querySelector('input[value="Razorpay"]');
+                if(razorpayRadio) razorpayRadio.checked = true;
+            }
+        } else {
+            codRadio.disabled = false;
+            codLabel.classList.remove('opacity-50', 'cursor-not-allowed');
+            codLabel.classList.add('cursor-pointer');
+            codMsg.classList.add('hidden');
+        }
+    }
+
     function updatePaymentSelection() {
+        checkCODEligibility();
+
         document.querySelectorAll('.payment-option').forEach(label => {
             label.classList.remove('border-orange-500', 'bg-orange-50');
             label.classList.add('border-gray-200');
         });
+        
         const selected = document.querySelector('input[name="payment_method"]:checked');
+        let displayedTotal = currentTotal;
+        const shippingEl = document.getElementById('summary_shipping');
+        
         if (selected) {
             const label = selected.closest('.payment-option');
             label.classList.remove('border-gray-200');
             label.classList.add('border-orange-500', 'bg-orange-50');
+            
+            if (selected.value === 'COD') {
+                displayedTotal = currentTotal + codFee;
+                if(shippingEl) {
+                    shippingEl.textContent = '+₹' + codFee.toFixed(2);
+                    shippingEl.classList.remove('text-green-600');
+                    shippingEl.classList.add('text-orange-600');
+                }
+            } else {
+                if(shippingEl) {
+                    shippingEl.textContent = 'Free';
+                    shippingEl.classList.remove('text-orange-600');
+                    shippingEl.classList.add('text-green-600');
+                }
+            }
+            
+            document.getElementById('summary_total').textContent = '₹' + displayedTotal.toFixed(2);
         }
     }
+    
+    // Call on load
+    document.addEventListener('DOMContentLoaded', function() {
+        updatePaymentSelection();
+    });
 
     function applyCoupon() {
         const code = document.getElementById('coupon_code').value.trim();
@@ -338,10 +408,12 @@
                 document.getElementById('remove_coupon_btn').classList.remove('hidden');
                 
                 // Update totals
+                currentTotal = parseFloat(data.final_total);
                 document.getElementById('summary_subtotal').textContent = '₹' + parseFloat(data.subtotal).toFixed(2);
                 document.getElementById('discount_row').classList.remove('hidden');
                 document.getElementById('summary_discount').textContent = '-₹' + parseFloat(data.discount).toFixed(2);
-                document.getElementById('summary_total').textContent = '₹' + parseFloat(data.final_total).toFixed(2);
+                
+                updatePaymentSelection();
                 
                 // Update Wallet availability
                 const walletBalance = parseFloat('{{ wallet.balance }}');
@@ -393,8 +465,10 @@
                 msgEl.classList.add('hidden');
                 
                 // Reset totals
+                currentTotal = parseFloat(data.total);
                 document.getElementById('discount_row').classList.add('hidden');
-                document.getElementById('summary_total').textContent = '₹' + parseFloat(data.total).toFixed(2);
+                
+                updatePaymentSelection();
                 
                 const walletBalance = parseFloat('{{ wallet.balance }}');
                 const finalTotal = parseFloat(data.total);

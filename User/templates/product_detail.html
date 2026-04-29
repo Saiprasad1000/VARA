@@ -67,7 +67,7 @@
                 <p class="text-xl text-gray-600 mt-2">{{ product.artist_name }}</p>
             </div>
 
-            <!-- Rating -->
+            {% comment %} <!-- Rating -->
             <div class="flex items-center space-x-1">
                 <svg class="w-6 h-6 text-yellow-400 fill-current" viewBox="0 0 24 24">
                     <path
@@ -89,7 +89,7 @@
                     <path
                         d="M12 17.27L18.18 21l-1.64-7.03L22 9.24l-7.19-.61L12 2 9.19 8.63 2 9.24l5.46 4.73L5.82 21z" />
                 </svg>
-            </div>
+            </div> {% endcomment %}
 
             <!-- Product Information -->
             <div class="space-y-3 text-gray-700">
@@ -109,8 +109,13 @@
                 <select id="variant-select"
                     class="mt-1 block w-full rounded-lg border border-gray-300 bg-white/80 py-2.5 px-3 text-sm sm:text-base shadow-sm focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-gray-800 hover:border-orange-300 transition-colors duration-150">
                     {% for variant in variants %}
-                    <option value="{{ variant.id }}" data-price="{{ variant.price }}" data-stock="{{ variant.stock }}">
-                        {{ variant.variant_type }} - ₹{{ variant.price }} ({{ variant.stock }} in stock)
+                    <option value="{{ variant.id }}" data-price="{{ variant.discounted_price }}" 
+                        data-original-price="{{ variant.price }}" 
+                        data-discount-percent="{{ variant.discount_percent }}" 
+                        data-stock="{{ variant.stock }}">
+                        {{ variant.variant_type }} - ₹{{ variant.discounted_price }}
+                        {% if variant.discount_percent > 0 %} ({{ variant.discount_percent }}% OFF!){% endif %}
+                        ({{ variant.stock }} in stock)
                     </option>
                     {% endfor %}
                 </select>
@@ -121,8 +126,12 @@
             {% endif %}
 
             <!-- Price -->
-            <div>
-                <p class="text-5xl font-bold text-green-600">₹{{ product.price }}</p>
+            <div id="price-container">
+                <div class="flex items-center gap-3 mb-1 {% if product.discount_percent <= 0 %}hidden{% endif %}" id="discount-container-display">
+                    <p class="text-2xl text-gray-400 line-through" id="original-price-display">₹{{ product.price }}</p>
+                    <span class="text-sm font-bold text-orange-500 bg-orange-100 px-2 py-1 rounded" id="discount-badge-display">{{ product.discount_percent }}% OFF</span>
+                </div>
+                <p class="text-5xl font-bold text-green-600" id="current-price-display">₹{% if product.discount_percent > 0 %}{{ product.discounted_price }}{% else %}{{ product.price }}{% endif %}</p>
             </div>
 
             <!-- Quantity Selector -->
@@ -148,12 +157,12 @@
 
             <!-- Action Buttons -->
             <div class="flex items-center space-x-4">
-                <button onclick="add_to_cart()"
-                    class="flex-1 bg-orange-500 text-white py-4 rounded-lg font-semibold hover:bg-orange-600 transition text-lg">
+                <button onclick="add_to_cart()" id="add-to-cart-btn"
+                    class="flex-1 bg-orange-500 text-white py-4 rounded-lg font-semibold hover:bg-orange-600 transition text-lg disabled:bg-gray-400 disabled:cursor-not-allowed">
                     Add to Cart
                 </button>
-                <button
-                    class="flex-1 bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition text-lg">
+                <button id="buy-now-btn"
+                    class="flex-1 bg-green-600 text-white py-4 rounded-lg font-semibold hover:bg-green-700 transition text-lg disabled:bg-gray-400 disabled:cursor-not-allowed">
                     Buy Now
                 </button>
                 <button onclick="addToWishlist()"
@@ -275,6 +284,8 @@
         const option = select.options[select.selectedIndex];
         const variantId = option.value;
         const variantPrice = option.dataset.price;
+        const variantOriginalPrice = option.dataset.originalPrice;
+        const variantDiscountPercent = option.dataset.discountPercent;
         const variantStock = option.dataset.stock;
 
         // Update hidden inputs
@@ -282,29 +293,79 @@
         document.getElementById('selected-variant-stock').value = variantStock;
 
         // Update price display
-        const priceElement = document.querySelector('.text-5xl.font-bold.text-green-600');
-        if (priceElement && variantPrice !== undefined) {
-            priceElement.textContent = '₹' + variantPrice;
+        const currentPriceEl = document.getElementById('current-price-display');
+        const origPriceEl = document.getElementById('original-price-display');
+        const discountBadgeEl = document.getElementById('discount-badge-display');
+        const discountContainerEl = document.getElementById('discount-container-display');
+        
+        if (currentPriceEl && variantPrice !== undefined) {
+            currentPriceEl.textContent = '₹' + variantPrice;
+            
+            if (parseInt(variantDiscountPercent) > 0) {
+                if(origPriceEl) origPriceEl.textContent = '₹' + variantOriginalPrice;
+                if(discountBadgeEl) discountBadgeEl.textContent = variantDiscountPercent + '% OFF';
+                if(discountContainerEl) discountContainerEl.classList.remove('hidden');
+                if(discountContainerEl) discountContainerEl.style.display = 'flex';
+            } else {
+                if(discountContainerEl) discountContainerEl.style.display = 'none';
+                if(discountContainerEl) discountContainerEl.classList.add('hidden');
+            }
         }
 
-        // Update quantity max based on variant stock
+        // Update quantity max based on variant stock and disable buttons if out of stock
         const quantityInput = document.getElementById('quantity');
+        const addToCartBtn = document.getElementById('add-to-cart-btn');
+        const buyNowBtn = document.getElementById('buy-now-btn');
+        const stockValue = parseInt(variantStock) || 0;
+        
         if (quantityInput && variantStock !== undefined) {
-            quantityInput.max = variantStock;
+            quantityInput.max = stockValue;
             const current = parseInt(quantityInput.value) || 1;
-            const max = parseInt(variantStock);
-            if (current > max) {
-                quantityInput.value = max;
+            if (current > stockValue && stockValue > 0) {
+                quantityInput.value = stockValue;
+            } else if (stockValue === 0) {
+                quantityInput.value = 0;
             }
+        }
+        
+        // Disable action buttons if stock is 0
+        if (stockValue <= 0) {
+            if (addToCartBtn) {
+                addToCartBtn.disabled = true;
+                addToCartBtn.textContent = 'Out of Stock';
+            }
+            if (buyNowBtn) buyNowBtn.disabled = true;
+        } else {
+            if (addToCartBtn) {
+                addToCartBtn.disabled = false;
+                addToCartBtn.textContent = 'Add to Cart';
+            }
+            if (buyNowBtn) buyNowBtn.disabled = false;
         }
     }
 
-    // Initialize variant selection and listen for changes
+    // Initialize variant selection and product-level checking
     window.addEventListener('DOMContentLoaded', function () {
         const select = document.getElementById('variant-select');
+        const addToCartBtn = document.getElementById('add-to-cart-btn');
+        const buyNowBtn = document.getElementById('buy-now-btn');
+
         if (select) {
-            updateVariantFromSelect();
+            updateVariantFromSelect(); // This handles stock checks for variants
             select.addEventListener('change', updateVariantFromSelect);
+        } else {
+            // No variants, use base product stock
+            const baseStock = parseInt("{{ product.available_quantity }}") || 0;
+            if (baseStock <= 0) {
+                if (addToCartBtn) {
+                    addToCartBtn.disabled = true;
+                    addToCartBtn.textContent = 'Out of Stock';
+                }
+                if (buyNowBtn) buyNowBtn.disabled = true;
+                
+                const quantityInput = document.getElementById('quantity');
+                if (quantityInput) quantityInput.value = 0;
+            }
         }
     });
 

@@ -118,7 +118,12 @@
                 </div>
 
                 <!-- Main Actions -->
-                <div class="flex justify-end gap-4">
+                <div class="flex justify-end gap-4 mt-8 pt-6 border-t border-gray-100 flex-wrap">
+                    <a href="{% url 'user_order_invoice' order.id %}" target="_blank"
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg>
+                        Download Invoice
+                    </a>
                     {% if order.payment_method == 'Razorpay' and order.payment_status in 'Payment Pending,Failed' %}
                     <button onclick="retryPayment({{ order.id }})"
                         class="px-6 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 font-bold transition">
@@ -130,12 +135,12 @@
                         onsubmit="return confirm('Are you sure you want to cancel the entire order?');">
                         {% csrf_token %}
                         <button type="submit"
-                            class="px-6 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition">Cancel
+                            class="px-6 py-2 border border-red-200 text-red-600 rounded-lg hover:bg-red-50 transition font-medium">Cancel
                             Order</button>
                     </form>
                     {% endif %}
                     <a href="{% url 'my_orders' %}"
-                        class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition">Back to
+                        class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition font-medium">Back to
                         Orders</a>
                 </div>
 

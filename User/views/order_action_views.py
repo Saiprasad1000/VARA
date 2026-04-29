@@ -81,4 +81,15 @@ def return_order_item(request, item_id):
     
     messages.success(request, "Return requested successfully. Awaiting admin approval.")
     return redirect('user_order_detail', order_id=order.id)
+
+@user_required
+def download_user_invoice(request, order_id):
+    """User: secure download of their own invoice."""
+    from Admin.services.invoice_service import generate_invoice_pdf
+    from django.http import HttpResponse
     
+    order = get_object_or_404(Order, id=order_id, user=request.user)
+    buffer = generate_invoice_pdf(order)
+    response = HttpResponse(buffer, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="vara_invoice_order_{order.id}.pdf"'
+    return response

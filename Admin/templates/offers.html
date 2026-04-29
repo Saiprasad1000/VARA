@@ -40,28 +40,44 @@
                 <table class="w-full">
                     <thead class="bg-[#F7F4ED] text-left text-sm text-gray-600">
                         <tr>
-                            <th class="py-3 px-6 font-semibold">S.No</th>
-                            <th class="py-3 px-6 font-semibold">Product</th>
-                            <th class="py-3 px-6 font-semibold">Category</th>
-                            <th class="py-3 px-6 font-semibold">Offer</th>
+                            <th class="py-3 px-6 font-semibold">Offer Name</th>
+                            <th class="py-3 px-6 font-semibold">Discount</th>
+                            <th class="py-3 px-6 font-semibold">Scope</th>
+                            <th class="py-3 px-6 font-semibold">Valid Till</th>
                             <th class="py-3 px-6 font-semibold text-center">Action</th>
                         </tr>
                     </thead>
                     <tbody class="text-sm text-gray-700">
                         {% for offer in offers %}
                         <tr class="border-t border-[#EDEAE3] hover:bg-[#F9F6F1] transition">
-                            <td class="py-3 px-6">{{ forloop.counter }}</td>
-                            <td class="py-3 px-6">{{ offer.product_name }}</td>
-                            <td class="py-3 px-6">{{ offer.category_name }}</td>
-                            <td class="py-3 px-6">{{ offer.discount }}%</td>
-                            <td class="py-3 px-6 text-center space-x-2">
-                                {% if offer.is_listed %}
-                                <button onclick="toggleOffer('{{ offer.id }}')"
-                                    class="bg-green-500 text-white px-4 py-1 rounded-md hover:bg-green-600 transition">List</button>
+                            <td class="py-3 px-6 font-medium">
+                                {{ offer.name }}
+                                {% if offer.is_active %}
+                                <span class="ml-2 inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">Active</span>
                                 {% else %}
-                                <button onclick="toggleOffer('{{ offer.id }}')"
-                                    class="bg-red-500 text-white px-4 py-1 rounded-md hover:bg-red-600 transition">Unlist</button>
+                                <span class="ml-2 inline-flex items-center rounded-full bg-red-100 px-2 py-0.5 text-xs font-medium text-red-800">Inactive</span>
                                 {% endif %}
+                            </td>
+                            <td class="py-3 px-6 font-medium text-blue-600">
+                                {% if offer.offer_type == 'Percentage' %}
+                                    {{ offer.value|floatformat:0 }}% OFF
+                                {% else %}
+                                    ₹{{ offer.value|floatformat:0 }} OFF
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-6 text-xs text-gray-500">
+                                {% if offer.products.count > 0 %}<b>{{ offer.products.count }}</b> Product(s)<br>{% endif %}
+                                {% if offer.categories.count > 0 %}<b>{{ offer.categories.count }}</b> Category(s)<br>{% endif %}
+                                {% if offer.variants.count > 0 %}<b>{{ offer.variants.count }}</b> Variant(s){% endif %}
+                            </td>
+                            <td class="py-3 px-6 text-xs">
+                                {{ offer.end_date|date:'M d, Y H:i' }}
+                            </td>
+                            <td class="py-3 px-6 text-center space-x-2">
+                                <button onclick="toggleOffer('{{ offer.id }}')"
+                                    class="{% if not offer.is_active %}bg-green-500 hover:bg-green-600{% else %}bg-orange-500 hover:bg-orange-600{% endif %} text-white px-3 py-1 rounded-md transition text-xs">
+                                    {% if not offer.is_active %}Activate{% else %}Deactivate{% endif %}
+                                </button>
                                 <button onclick="deleteOffer('{{ offer.id }}')"
                                     class="text-red-600 hover:text-red-800 transition">
                                     🗑️

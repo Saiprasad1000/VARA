@@ -146,6 +146,8 @@ def checkout(request):
     wallet, _ = Wallet.objects.get_or_create(user=request.user)
     
     subtotal = Decimal(str(cart.get_total()))
+    original_subtotal = Decimal(str(cart.get_original_total()))
+    offers_discount = Decimal(str(cart.get_total_discount()))
     discount_amount = Decimal('0.00')
     applied_coupon_code = None
     
@@ -187,6 +189,8 @@ def checkout(request):
     context = {
         'cart': cart,
         'cart_items': cart_items,
+        'original_subtotal': original_subtotal,
+        'offers_discount': offers_discount,
         'subtotal': subtotal,
         'discount_amount': discount_amount,
         'applied_coupon_code': applied_coupon_code,
@@ -196,6 +200,8 @@ def checkout(request):
         'razorpay_key_id': settings.RAZORPAY_KEY_ID,
         'wallet': wallet,
         'available_referral_coupon': available_referral_coupon,
+        'cod_limit': Decimal('1000.00'),
+        'cod_fee': Decimal('50.00'),
     }
     return render(request, 'checkout.html', context)
 
@@ -361,16 +367,26 @@ def place_order(request):
                     
             total_amount = subtotal - discount_amount
             
+            if total_amount > Decimal('1000.00'):
+                return JsonResponse({
+                    'success': False, 
+                    'message': 'Cash on Delivery is not allowed for orders above ₹1000.'
+                }, status=400)
+                
+            delivery_charge = Decimal('50.00')
+            final_order_total = total_amount + delivery_charge
+            
             # Create Order
             order = Order.objects.create(
                 user=request.user,
                 address=address,
-                total_amount=total_amount,
+                total_amount=final_order_total,
                 payment_method='COD',
                 payment_status='Pending',
                 status='Pending',
                 coupon=applied_coupon,
-                discount_amount=discount_amount
+                discount_amount=discount_amount,
+                delivery_charge=delivery_charge
             )
             
             if applied_coupon:
@@ -506,7 +522,8 @@ def create_razorpay_order(request):
                 payment_status='Payment Pending',
                 status='Pending',
                 coupon=applied_coupon,
-                discount_amount=discount_amount
+                discount_amount=discount_amount,
+                delivery_charge=Decimal('0.00')
             )
             
             if applied_coupon:
@@ -665,7 +682,8 @@ def place_wallet_order(request):
                 payment_status='Paid',
                 status='Pending',
                 coupon=applied_coupon,
-                discount_amount=discount_amount
+                discount_amount=discount_amount,
+                delivery_charge=Decimal('0.00')
             )
             
             if applied_coupon:

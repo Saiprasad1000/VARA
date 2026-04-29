@@ -5,188 +5,188 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sales Report - VARA</title>
+    <title>VARA - Sales Report</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 
 <body class="bg-[#FFFDF8] text-gray-800">
-    <!-- Include Sidebar -->
     {% include 'sidebar.html' %}
 
-    <!-- Main Content -->
     <div class="ml-64 min-h-screen">
-        <!-- Top Navigation Bar -->
-        <header class="bg-[#FFFDF8] sticky top-0 z-10">
+        <header class="bg-[#FFFDF8] sticky top-0 z-10 border-b border-[#E7E2D9]">
             <div class="flex items-center justify-between px-8 py-4">
-                <!-- Search Bar -->
-                <div class="flex-1 max-w-xl">
-                    <div class="relative">
-                        <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400"
-                            fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                        <input type="text" placeholder="Search"
-                            class="w-full pl-10 pr-4 py-2 bg-[#F7F4ED] border-0 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7F5C]">
-                    </div>
-                </div>
-
-                <!-- Logout Button -->
+                <h1 class="text-2xl font-bold text-[#6B3E26]">Sales Report</h1>
                 <a href="{% url 'logout' %}"
-                    class="ml-4 px-6 py-2 bg-[#FF7F5C] text-white rounded-lg hover:bg-[#ff6741] transition-colors font-medium">
+                    class="px-6 py-2 bg-[#FF7F5C] text-white rounded-lg hover:bg-[#ff6741] transition-colors font-medium">
                     Log out
                 </a>
             </div>
         </header>
 
-        <!-- Sales Report Content -->
         <main class="p-8">
-            <!-- Header Section -->
-            <div class="mb-6">
-                <h1 class="text-3xl font-bold text-[#6B3E26]">Sales report</h1>
+            <!-- ── Filters ──────────────────────────────────────────────────────── -->
+            <div class="bg-[#FBF9F4] rounded-lg shadow-sm p-6 mb-6 border border-[#E7E2D9]">
+                <form method="GET" class="flex flex-wrap items-end gap-5">
+                    
+                    <div class="flex flex-col">
+                        <label class="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">Date Period</label>
+                        <select name="period" id="period-select"
+                                class="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8CC63F]">
+                            <option value="">All Time</option>
+                            <option value="daily" {% if period == 'daily' %}selected{% endif %}>Today</option>
+                            <option value="weekly" {% if period == 'weekly' %}selected{% endif %}>This Week</option>
+                            <option value="monthly" {% if period == 'monthly' %}selected{% endif %}>This Month</option>
+                            <option value="yearly" {% if period == 'yearly' %}selected{% endif %}>This Year</option>
+                            <option value="custom" {% if period == 'custom' %}selected{% endif %}>Custom Range</option>
+                        </select>
+                    </div>
+
+                    <!-- Custom Date Fields -->
+                    <div id="custom-date-fields" class="flex gap-4 items-end {% if period != 'custom' %}hidden{% endif %}">
+                        <div class="flex flex-col">
+                            <label class="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">From Date</label>
+                            <input type="date" name="date_from" value="{{ date_from }}"
+                                   class="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8CC63F]">
+                        </div>
+                        <div class="flex flex-col">
+                            <label class="text-xs font-semibold text-gray-500 mb-1 uppercase tracking-wider">To Date</label>
+                            <input type="date" name="date_to" value="{{ date_to }}"
+                                   class="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#8CC63F]">
+                        </div>
+                    </div>
+
+                    <div class="flex gap-3 ml-auto">
+                        <button type="submit"
+                                class="px-6 py-2 bg-[#8CC63F] text-white rounded-lg hover:bg-[#7bb236] transition-colors font-medium">
+                            Apply Filter
+                        </button>
+                        <a href="{% url 'sales_report' %}"
+                           class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium cursor-pointer">
+                            Clear
+                        </a>
+                    </div>
+                </form>
             </div>
 
-            <!-- Filter Section -->
-            <div class="bg-[#FBF9F4] rounded-lg shadow-sm p-6 mb-6 border border-[#E7E2D9]">
-                <div class="flex flex-wrap items-center gap-4">
-                    <!-- Product Name Filter -->
-                    <select
-                        class="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7F5C]">
-                        <option>Product Name</option>
-                        <option>Nagavalli</option>
-                        <option>Girl</option>
-                        <option>painting1</option>
-                        <option>painting2</option>
-                    </select>
-
-                    <span class="text-gray-600 font-medium">By</span>
-
-                    <!-- Sorting Filter -->
-                    <select
-                        class="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7F5C]">
-                        <option>Ascending</option>
-                        <option>Descending</option>
-                    </select>
-
-                    <span class="text-gray-600 font-medium ml-4">Filter</span>
-
-                    <!-- Category Filter -->
-                    <select
-                        class="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#FF7F5C]">
-                        <option value="">All Categories</option>
-                        <option>Romance</option>
-                        <option>Kids</option>
-                        <option>Fantasy</option>
-                        <option>Thriller</option>
-                    </select>
+            <!-- ── Summary Cards ────────────────────────────────────────────────── -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                <!-- Total Orders -->
+                <div class="bg-white rounded-lg shadow-sm p-5 border border-[#E7E2D9]">
+                    <p class="text-sm text-gray-500 font-semibold uppercase">Total Orders</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1">{{ total_orders }}</p>
+                </div>
+                <!-- Total Sales Before Discount (Net Revenue + Discount) -->
+                <div class="bg-white rounded-lg shadow-sm p-5 border border-[#E7E2D9]">
+                    <p class="text-sm text-gray-500 font-semibold uppercase">Total Sales</p>
+                    <p class="text-2xl font-bold text-gray-900 mt-1">₹{{ total_sales|add:total_discount|floatformat:2 }}</p>
+                </div>
+                <!-- Total Discount -->
+                <div class="bg-white rounded-lg shadow-sm p-5 border border-[#E7E2D9]">
+                    <p class="text-sm text-gray-500 font-semibold uppercase">Total Discount</p>
+                    <p class="text-2xl font-bold text-red-600 mt-1">₹{{ total_discount|floatformat:2 }}</p>
+                </div>
+                <!-- Net Revenue (Paid Amount) -->
+                <div class="bg-white rounded-lg shadow-sm p-5 border border-[#E7E2D9]">
+                    <p class="text-sm text-gray-500 font-semibold uppercase">Net Revenue</p>
+                    <p class="text-2xl font-bold text-green-600 mt-1">₹{{ net_revenue|floatformat:2 }}</p>
                 </div>
             </div>
 
-            <!-- Sales Table -->
+            <!-- ── Sales Table ──────────────────────────────────────────────────── -->
             <div class="bg-[#FBF9F4] rounded-lg shadow-sm overflow-hidden border border-[#E7E2D9]">
                 <div class="overflow-x-auto">
                     <table class="w-full">
                         <thead class="bg-[#F7F4ED] border-b border-[#EDEAE3]">
                             <tr>
-                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600">Constomer</th>
-                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600">Product Name</th>
-                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600">Qty</th>
-                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600">Price</th>
-                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600">Category</th>
-                                <th class="px-6 py-4 text-left text-sm font-semibold text-gray-600">Total</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Order ID</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Date</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Customer</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Payment</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Discount</th>
+                                <th class="px-6 py-4 text-left text-xs font-semibold text-gray-600 uppercase">Subtotal Paid</th>
+                                <th class="px-6 py-4 text-center text-xs font-semibold text-gray-600 uppercase">Status</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-200">
-                            {% for sale in sales %}
-                            <tr class="border-t border-[#EDEAE3] hover:bg-[#F9F6F1] transition-colors">
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ sale.customer }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ sale.product_name }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ sale.quantity }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ sale.price }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900">{{ sale.category }}</td>
-                                <td class="px-6 py-4 text-sm text-gray-900 font-semibold">{{ sale.total }}</td>
+                        <tbody class="divide-y divide-[#EDEAE3]">
+                            {% for order in orders %}
+                            <tr class="hover:bg-[#F9F6F1] transition-colors">
+                                <td class="px-6 py-4 text-sm font-medium text-blue-600">
+                                    <a href="{% url 'vara_admin_order_detail_test' order.id %}">#{{ order.id }}</a>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-600 flex flex-col">
+                                    <span>{{ order.created_at|date:"M d, Y" }}</span>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-800">
+                                    {{ order.user.first_name }} {{ order.user.last_name }}<br>
+                                    <span class="text-xs text-gray-500">{{ order.user.email }}</span>
+                                </td>
+                                <td class="px-6 py-4 text-sm text-gray-700">{{ order.payment_method }}</td>
+                                <td class="px-6 py-4 text-sm text-red-600">₹{{ order.discount_amount }}</td>
+                                <td class="px-6 py-4 text-sm font-bold text-gray-900">₹{{ order.total_amount }}</td>
+                                <td class="px-6 py-4 text-center">
+                                    <span class="px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full
+                                        {% if order.status == 'Delivered' %}bg-green-100 text-green-800
+                                        {% elif order.status == 'Cancelled' or order.status == 'Returned' %}bg-red-100 text-red-800
+                                        {% else %}bg-yellow-100 text-yellow-800{% endif %}">
+                                        {{ order.status }}
+                                    </span>
+                                </td>
                             </tr>
                             {% empty %}
                             <tr>
-                                <td colspan="6" class="px-6 py-8 text-center text-gray-500">No sales data available</td>
+                                <td colspan="7" class="px-6 py-10 text-center text-gray-500 italic">No sales found for the selected filters.</td>
                             </tr>
                             {% endfor %}
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Action Buttons -->
-                <div class="flex justify-end gap-3 px-6 py-4 border-t border-[#EDEAE3]">
-                    <button
-                        class="flex items-center gap-2 px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium">
-                        <span>Download PDF</span>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                        </svg>
-                    </button>
-                    <button
-                        class="flex items-center gap-2 px-6 py-2 bg-gray-900 text-white rounded-lg hover:bg-gray-800 transition-colors font-medium">
-                        <span>Get Excel sheet</span>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
-                        </svg>
-                    </button>
-                </div>
-            </div>
+                <!-- ── Pagination & Action Buttons ────────────────────────────────── -->
+                <div class="px-6 py-4 border-t border-[#EDEAE3] flex flex-col md:flex-row justify-between items-center gap-4">
+                    <!-- Pagination -->
+                    <div class="flex items-center gap-2">
+                        {% if orders.has_previous %}
+                        <a href="?page={{ orders.previous_page_number }}&period={{ period }}&date_from={{ date_from }}&date_to={{ date_to }}"
+                           class="px-3 py-1 bg-white border border-gray-300 rounded text-sm hover:bg-gray-50">Prev</a>
+                        {% endif %}
 
-            <!-- Pagination -->
-            <div class="flex justify-center mt-6">
-                <nav class="flex items-center gap-2">
-                    <button
-                        class="w-10 h-10 flex items-center justify-center bg-blue-600 text-white rounded-full font-medium hover:bg-blue-700">
-                        1
-                    </button>
-                    <button
-                        class="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-full font-medium hover:bg-gray-100">
-                        2
-                    </button>
-                    <button
-                        class="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-full font-medium hover:bg-gray-100">
-                        3
-                    </button>
-                    <button
-                        class="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-full font-medium hover:bg-gray-100">
-                        4
-                    </button>
-                    <button
-                        class="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-full font-medium hover:bg-gray-100">
-                        5
-                    </button>
-                    <button
-                        class="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-full font-medium hover:bg-gray-100">
-                        6
-                    </button>
-                    <button
-                        class="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-full font-medium hover:bg-gray-100">
-                        7
-                    </button>
-                    <button
-                        class="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-full font-medium hover:bg-gray-100">
-                        8
-                    </button>
-                    <button
-                        class="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-full font-medium hover:bg-gray-100">
-                        9
-                    </button>
-                    <button
-                        class="w-10 h-10 flex items-center justify-center bg-white text-gray-700 rounded-full font-medium hover:bg-gray-100">
-                        10
-                    </button>
-                    <button
-                        class="px-4 h-10 flex items-center justify-center bg-white text-blue-600 rounded-full font-medium hover:bg-gray-100">
-                        NEXT
-                    </button>
-                </nav>
+                        <span class="text-sm text-gray-600">
+                            Page {{ orders.number }} of {{ orders.paginator.num_pages }}
+                        </span>
+
+                        {% if orders.has_next %}
+                        <a href="?page={{ orders.next_page_number }}&period={{ period }}&date_from={{ date_from }}&date_to={{ date_to }}"
+                           class="px-3 py-1 bg-white border border-gray-300 rounded text-sm hover:bg-gray-50">Next</a>
+                        {% endif %}
+                    </div>
+
+                    <!-- Downloads -->
+                    <div class="flex gap-3">
+                        <a href="{% url 'sales_report_pdf' %}?period={{ period }}&date_from={{ date_from }}&date_to={{ date_to }}"
+                           class="flex items-center gap-2 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/><path fill-rule="evenodd" d="M12 2v5a1 1 0 01-1 1H6v7a1 1 0 01-1 1H4a1 1 0 01-1-1V5a1 1 0 011-1h1.586A1 1 0 016 3.586L9.414 7A1 1 0 0110 8.414V16a1 1 0 01-1 1z" clip-rule="evenodd"/></svg>
+                            Download PDF
+                        </a>
+                        <a href="{% url 'sales_report_excel' %}?period={{ period }}&date_from={{ date_from }}&date_to={{ date_to }}"
+                           class="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium">
+                            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z"/><path fill-rule="evenodd" d="M6 10h8v1H6v-1zm0 2h8v1H6v-1zm0 2h8v1H6v-1z" clip-rule="evenodd"/></svg>
+                            Download Excel
+                        </a>
+                    </div>
+                </div>
             </div>
         </main>
     </div>
-</body>
 
+    <script>
+        // Toggle custom date fields based on period selection
+        document.getElementById('period-select').addEventListener('change', function() {
+            if(this.value === 'custom') {
+                document.getElementById('custom-date-fields').classList.remove('hidden');
+            } else {
+                document.getElementById('custom-date-fields').classList.add('hidden');
+            }
+        });
+    </script>
+</body>
 </html>

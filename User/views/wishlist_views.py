@@ -96,6 +96,17 @@ def move_to_cart(request):
         wishlist_item_id = request.POST.get('wishlist_item_id')
         wishlist_item = get_object_or_404(WishlistItems, id=wishlist_item_id)
         
+        # Check stock before moving
+        product = wishlist_item.product
+        variant = wishlist_item.varient
+        available_stock = variant.stock if variant else product.available_quantity
+        
+        if available_stock <= 0:
+            return JsonResponse({
+                'success': False,
+                'message': 'Cannot move to cart. Product is out of stock.'
+            })
+        
         # Get or create cart
         from .cart_views import get_or_create_cart
         cart = get_or_create_cart(request)
